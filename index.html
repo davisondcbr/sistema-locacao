@@ -1,0 +1,3849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#111827">
+<title>Sistema de Locação</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+:root{
+    --primary:#2563eb;
+    --primary-dark:#1d4ed8;
+    --success:#16a34a;
+    --warning:#d97706;
+    --danger:#dc2626;
+    --dark:#111827;
+    --dark2:#1f2937;
+    --gray:#6b7280;
+    --light:#f3f4f6;
+    --border:#e5e7eb;
+    --white:#fff;
+    --shadow:0 4px 18px rgba(0,0,0,.07);
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f5f7fb;
+    color:#111827;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+.app{
+    min-height:100vh;
+    display:flex;
+}
+
+.sidebar{
+    width:250px;
+    background:linear-gradient(180deg,#111827,#1f2937);
+    color:white;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    z-index:1000;
+    overflow-y:auto;
+}
+
+.logo{
+    padding:24px 20px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.logo h1{
+    font-size:21px;
+}
+
+.logo span{
+    display:block;
+    color:#9ca3af;
+    font-size:12px;
+    margin-top:5px;
+}
+
+.menu{
+    padding:15px 10px;
+}
+
+.menu button{
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#d1d5db;
+    padding:13px 14px;
+    margin-bottom:5px;
+    border-radius:9px;
+    cursor:pointer;
+    text-align:left;
+    font-size:14px;
+    transition:.2s;
+}
+
+.menu button:hover,
+.menu button.active{
+    background:#2563eb;
+    color:white;
+}
+
+.menu button span{
+    display:inline-block;
+    width:25px;
+}
+
+.main{
+    margin-left:250px;
+    width:calc(100% - 250px);
+    min-height:100vh;
+}
+
+.topbar{
+    height:70px;
+    background:white;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 28px;
+    position:sticky;
+    top:0;
+    z-index:500;
+}
+
+.topbar h2{
+    font-size:21px;
+}
+
+.mobile-menu{
+    display:none;
+    border:0;
+    background:var(--dark);
+    color:white;
+    border-radius:8px;
+    padding:10px 12px;
+    cursor:pointer;
+}
+
+.content{
+    padding:25px;
+    max-width:1600px;
+    margin:auto;
+}
+
+/* =========================
+   SECTIONS
+========================= */
+
+.secao{
+    display:none;
+}
+
+.secao.active{
+    display:block;
+}
+
+.page-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.page-title h1{
+    font-size:25px;
+}
+
+.page-title p{
+    color:var(--gray);
+    margin-top:5px;
+    font-size:14px;
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.dashboard-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:25px;
+}
+
+.card{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+.stat-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.stat-card small{
+    color:var(--gray);
+    font-size:13px;
+}
+
+.stat-card strong{
+    display:block;
+    font-size:28px;
+    margin-top:7px;
+}
+
+.stat-icon{
+    width:48px;
+    height:48px;
+    border-radius:12px;
+    background:#eff6ff;
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn{
+    border:0;
+    border-radius:8px;
+    padding:10px 15px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+    transition:.2s;
+}
+
+.btn:hover{
+    transform:translateY(-1px);
+}
+
+.btn-primary{
+    background:var(--primary);
+    color:white;
+}
+
+.btn-primary:hover{
+    background:var(--primary-dark);
+}
+
+.btn-success{
+    background:var(--success);
+    color:white;
+}
+
+.btn-danger{
+    background:var(--danger);
+    color:white;
+}
+
+.btn-warning{
+    background:var(--warning);
+    color:white;
+}
+
+.btn-secondary{
+    background:#e5e7eb;
+    color:#111827;
+}
+
+.btn-sm{
+    padding:7px 10px;
+    font-size:12px;
+}
+
+.actions{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.table-card{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:13px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+}
+
+.table-header{
+    padding:17px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+}
+
+.table-header h3{
+    font-size:17px;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:800px;
+}
+
+th{
+    background:#f9fafb;
+    color:#6b7280;
+    font-size:12px;
+    text-transform:uppercase;
+    text-align:left;
+    padding:13px 15px;
+    border-bottom:1px solid var(--border);
+}
+
+td{
+    padding:13px 15px;
+    border-bottom:1px solid var(--border);
+    font-size:14px;
+}
+
+tr:hover td{
+    background:#fafafa;
+}
+
+.empty{
+    padding:40px;
+    text-align:center;
+    color:#9ca3af;
+}
+
+/* =========================
+   BADGES
+========================= */
+
+.badge{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.badge-green{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.badge-red{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.badge-yellow{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.badge-blue{
+    background:#dbeafe;
+    color:#1e40af;
+}
+
+.badge-gray{
+    background:#e5e7eb;
+    color:#374151;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:15px;
+}
+
+.form-grid-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.form-group{
+    margin-bottom:14px;
+}
+
+.form-group.full{
+    grid-column:1/-1;
+}
+
+label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:6px;
+    color:#374151;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    padding:11px 12px;
+    font-size:14px;
+    background:white;
+    outline:none;
+    transition:.2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+
+textarea{
+    min-height:110px;
+    resize:vertical;
+}
+
+.form-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:20px;
+}
+
+/* =========================
+   SEARCH CLIENT
+========================= */
+
+.cliente-search{
+    position:relative;
+}
+
+.cliente-dropdown{
+    position:absolute;
+    left:0;
+    right:0;
+    top:100%;
+    background:white;
+    border:1px solid #d1d5db;
+    border-top:0;
+    border-radius:0 0 9px 9px;
+    max-height:250px;
+    overflow-y:auto;
+    z-index:1000;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+    display:none;
+}
+
+.cliente-dropdown.show{
+    display:block;
+}
+
+.cliente-item{
+    padding:12px;
+    border-bottom:1px solid #f0f0f0;
+    cursor:pointer;
+}
+
+.cliente-item:hover{
+    background:#eff6ff;
+}
+
+.cliente-item strong{
+    display:block;
+    font-size:14px;
+}
+
+.cliente-item small{
+    color:#6b7280;
+    display:block;
+    margin-top:3px;
+}
+
+.cliente-selecionado{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--success);
+    display:none;
+}
+
+/* =========================
+   MODAL
+========================= */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+    padding:20px;
+}
+
+.modal-overlay.show{
+    display:flex;
+}
+
+.modal{
+    width:100%;
+    max-width:900px;
+    max-height:90vh;
+    overflow-y:auto;
+    background:white;
+    border-radius:14px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+
+.modal-header{
+    padding:18px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:sticky;
+    top:0;
+    background:white;
+    z-index:5;
+}
+
+.modal-header h3{
+    font-size:18px;
+}
+
+.modal-close{
+    border:0;
+    background:#f3f4f6;
+    border-radius:8px;
+    width:34px;
+    height:34px;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.modal-body{
+    padding:20px;
+}
+
+/* =========================
+   CONTRACT
+========================= */
+
+.contrato{
+    background:white;
+    padding:45px;
+    max-width:850px;
+    margin:auto;
+    color:#111;
+    line-height:1.55;
+}
+
+.contrato h1{
+    text-align:center;
+    font-size:22px;
+    margin-bottom:5px;
+}
+
+.contrato .numero{
+    text-align:center;
+    color:#666;
+    margin-bottom:25px;
+}
+
+.contrato h3{
+    background:#f3f4f6;
+    padding:8px;
+    margin-top:20px;
+    margin-bottom:10px;
+    font-size:14px;
+}
+
+.contrato p{
+    font-size:13px;
+    margin-bottom:7px;
+}
+
+.contrato table{
+    min-width:0;
+}
+
+.assinaturas{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:50px;
+    margin-top:70px;
+}
+
+.assinatura{
+    border-top:1px solid #111;
+    text-align:center;
+    padding-top:8px;
+    font-size:12px;
+}
+
+/* =========================
+   CONFIG
+========================= */
+
+.config-card{
+    max-width:900px;
+}
+
+.info-box{
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    color:#1e40af;
+    padding:12px;
+    border-radius:8px;
+    font-size:13px;
+    margin-bottom:18px;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    background:#111827;
+    color:white;
+    padding:13px 17px;
+    border-radius:9px;
+    box-shadow:0 8px 25px rgba(0,0,0,.2);
+    z-index:5000;
+    transform:translateY(100px);
+    opacity:0;
+    transition:.3s;
+    max-width:350px;
+    font-size:14px;
+}
+
+.toast.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+/* =========================
+   PRINT
+========================= */
+
+@media print{
+    body{
+        background:white;
+    }
+
+    .sidebar,
+    .topbar,
+    .page-title,
+    .modal-header,
+    .no-print{
+        display:none!important;
+    }
+
+    .main{
+        margin:0;
+        width:100%;
+    }
+
+    .content{
+        padding:0;
+    }
+
+    .modal-overlay{
+        position:static;
+        display:block;
+        background:white;
+        padding:0;
+    }
+
+    .modal{
+        max-height:none;
+        max-width:none;
+        box-shadow:none;
+    }
+
+    .contrato{
+        max-width:none;
+        padding:20px;
+    }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1000px){
+    .dashboard-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .form-grid-3{
+        grid-template-columns:1fr 1fr;
+    }
+}
+
+@media(max-width:750px){
+    .sidebar{
+        transform:translateX(-100%);
+        transition:.25s;
+    }
+
+    .sidebar.open{
+        transform:translateX(0);
+    }
+
+    .main{
+        margin-left:0;
+        width:100%;
+    }
+
+    .mobile-menu{
+        display:block;
+    }
+
+    .topbar{
+        padding:0 15px;
+    }
+
+    .topbar h2{
+        font-size:17px;
+    }
+
+    .content{
+        padding:15px;
+    }
+
+    .dashboard-grid{
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+    }
+
+    .card{
+        padding:15px;
+    }
+
+    .stat-card strong{
+        font-size:23px;
+    }
+
+    .form-grid,
+    .form-grid-3{
+        grid-template-columns:1fr;
+    }
+
+    .page-title{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .page-title .btn{
+        width:100%;
+    }
+
+    .table-header{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .table-header .btn{
+        width:100%;
+    }
+
+    .contrato{
+        padding:20px;
+    }
+
+    .assinaturas{
+        grid-template-columns:1fr;
+        gap:60px;
+    }
+
+    .modal-overlay{
+        padding:8px;
+    }
+
+    .modal{
+        max-height:95vh;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- =========================
+     SIDEBAR
+========================= -->
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="logo">
+        <h1>🔧 LocaçãoPro</h1>
+        <span>Sistema de Gestão de Locações</span>
+    </div>
+
+    <nav class="menu">
+
+        <button class="active" onclick="mostrarSecao('dashboard',this)">
+            <span>📊</span> Dashboard
+        </button>
+
+        <button onclick="mostrarSecao('clientes',this)">
+            <span>👥</span> Clientes
+        </button>
+
+        <button onclick="mostrarSecao('ferramentas',this)">
+            <span>🔧</span> Ferramentas
+        </button>
+
+        <button onclick="mostrarSecao('locacoes',this)">
+            <span>📦</span> Locações
+        </button>
+
+        <button onclick="mostrarSecao('contratos',this)">
+            <span>📄</span> Contratos
+        </button>
+
+        <button onclick="mostrarSecao('manutencao',this)">
+            <span>🛠️</span> Manutenção
+        </button>
+
+        <button onclick="mostrarSecao('financeiro',this)">
+            <span>💰</span> Financeiro
+        </button>
+
+        <button onclick="mostrarSecao('configuracoes',this)">
+            <span>⚙️</span> Configurações
+        </button>
+
+    </nav>
+
+</aside>
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="main">
+
+<header class="topbar">
+
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        <h2 id="tituloPagina">Dashboard</h2>
+    </div>
+
+    <div id="empresaTopbar" style="font-size:13px;color:#6b7280;">
+        Sistema de Locação
+    </div>
+
+</header>
+
+<div class="content">
+
+<!-- =========================
+     DASHBOARD
+========================= -->
+
+<section id="dashboard" class="secao active">
+
+    <div class="page-title">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Visão geral do sistema</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="card stat-card">
+            <div>
+                <small>Clientes</small>
+                <strong id="dashClientes">0</strong>
+            </div>
+            <div class="stat-icon">👥</div>
+        </div>
+
+        <div class="card stat-card">
+            <div>
+                <small>Ferramentas</small>
+                <strong id="dashFerramentas">0</strong>
+            </div>
+            <div class="stat-icon">🔧</div>
+        </div>
+
+        <div class="card stat-card">
+            <div>
+                <small>Locações Ativas</small>
+                <strong id="dashLocacoes">0</strong>
+            </div>
+            <div class="stat-icon">📦</div>
+        </div>
+
+        <div class="card stat-card">
+            <div>
+                <small>Faturamento</small>
+                <strong id="dashFaturamento">R$ 0,00</strong>
+            </div>
+            <div class="stat-icon">💰</div>
+        </div>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-header">
+            <h3>Locações recentes</h3>
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Ferramenta</th>
+                        <th>Período</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="dashboardLocacoes"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     CLIENTES
+========================= -->
+
+<section id="clientes" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Clientes</h1>
+            <p>Cadastro e gerenciamento de clientes</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="abrirNovoCliente()">
+            + Novo Cliente
+        </button>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-header">
+
+            <h3>Clientes cadastrados</h3>
+
+            <input
+                id="buscaClientes"
+                placeholder="🔎 Buscar cliente..."
+                oninput="renderClientes()"
+                style="max-width:280px;"
+            >
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Nome</th>
+                        <th>CPF/CNPJ</th>
+                        <th>Telefone</th>
+                        <th>Cidade</th>
+                        <th>Ações</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaClientes"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     FERRAMENTAS
+========================= -->
+
+<section id="ferramentas" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Ferramentas</h1>
+            <p>Controle dos equipamentos disponíveis para locação</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="abrirNovaFerramenta()">
+            + Nova Ferramenta
+        </button>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-header">
+
+            <h3>Equipamentos cadastrados</h3>
+
+            <input
+                id="buscaFerramentas"
+                placeholder="🔎 Buscar ferramenta..."
+                oninput="renderFerramentas()"
+                style="max-width:280px;"
+            >
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Nome</th>
+                        <th>Código</th>
+                        <th>Voltagem</th>
+                        <th>Diária</th>
+                        <th>Semanal</th>
+                        <th>Mensal</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaFerramentas"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     LOCACOES
+========================= -->
+
+<section id="locacoes" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Locações</h1>
+            <p>Controle de equipamentos alugados</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="abrirNovaLocacao()">
+            + Nova Locação
+        </button>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-header">
+
+            <h3>Locações</h3>
+
+            <input
+                id="buscaLocacoes"
+                placeholder="🔎 Buscar..."
+                oninput="renderLocacoes()"
+                style="max-width:280px;"
+            >
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Ferramenta</th>
+                        <th>Retirada</th>
+                        <th>Devolução</th>
+                        <th>Cobrança</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaLocacoes"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     CONTRATOS
+========================= -->
+
+<section id="contratos" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Contratos</h1>
+            <p>Contratos gerados automaticamente pelas locações</p>
+        </div>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Equipamento</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaContratos"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     MANUTENCAO
+========================= -->
+
+<section id="manutencao" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Manutenção</h1>
+            <p>Ferramentas que precisam de manutenção</p>
+        </div>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Ferramenta</th>
+                        <th>Código</th>
+                        <th>Voltagem</th>
+                        <th>Status</th>
+                        <th>Observações</th>
+                        <th>Ação</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaManutencao"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     FINANCEIRO
+========================= -->
+
+<section id="financeiro" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Financeiro</h1>
+            <p>Resumo financeiro das locações</p>
+        </div>
+
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="card stat-card">
+
+            <div>
+                <small>Total de locações</small>
+                <strong id="finLocacoes">0</strong>
+            </div>
+
+            <div class="stat-icon">📦</div>
+
+        </div>
+
+        <div class="card stat-card">
+
+            <div>
+                <small>Faturamento</small>
+                <strong id="finFaturamento">R$ 0,00</strong>
+            </div>
+
+            <div class="stat-icon">💰</div>
+
+        </div>
+
+        <div class="card stat-card">
+
+            <div>
+                <small>Cauções</small>
+                <strong id="finCaucoes">R$ 0,00</strong>
+            </div>
+
+            <div class="stat-icon">🔐</div>
+
+        </div>
+
+        <div class="card stat-card">
+
+            <div>
+                <small>Ticket médio</small>
+                <strong id="finTicket">R$ 0,00</strong>
+            </div>
+
+            <div class="stat-icon">📈</div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     CONFIGURACOES
+========================= -->
+
+<section id="configuracoes" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Configurações</h1>
+            <p>Configure os dados da empresa e os termos dos contratos</p>
+        </div>
+
+    </div>
+
+    <div class="card config-card">
+
+        <div class="info-box">
+            Os dados configurados aqui serão utilizados automaticamente nos contratos.
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label>Nome da empresa</label>
+
+                <input id="configNome" placeholder="Nome da empresa">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Telefone</label>
+
+                <input id="configTelefone" placeholder="(14) 99999-9999">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>CPF/CNPJ</label>
+
+                <input id="configDocumento" placeholder="CPF ou CNPJ">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Endereço</label>
+
+                <input id="configEndereco" placeholder="Endereço da empresa">
+
+            </div>
+
+            <div class="form-group full">
+
+                <label>Termos e condições padrão do contrato</label>
+
+                <textarea id="configTermo"></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button class="btn btn-primary" onclick="salvarConfiguracoes()">
+                💾 Salvar configurações
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+</div>
+</main>
+</div>
+
+
+<!-- =========================
+     MODAL
+========================= -->
+
+<div class="modal-overlay" id="modalOverlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <h3 id="modalTitulo">Cadastro</h3>
+
+            <button class="modal-close" onclick="fecharModal()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body" id="modalBody"></div>
+
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+
+/* =====================================================
+   BANCO LOCAL
+===================================================== */
+
+let clientes = JSON.parse(localStorage.getItem("loc_clientes") || "[]");
+
+let ferramentas = JSON.parse(localStorage.getItem("loc_ferramentas") || "[]");
+
+let locacoes = JSON.parse(localStorage.getItem("loc_locacoes") || "[]");
+
+let contratos = JSON.parse(localStorage.getItem("loc_contratos") || "[]");
+
+let config = JSON.parse(localStorage.getItem("loc_config") || "{}");
+
+let clienteSelecionadoLocacao = null;
+
+let ferramentaEditando = null;
+
+let clienteEditando = null;
+
+
+/* =====================================================
+   CONFIG PADRÃO
+===================================================== */
+
+const termoPadrao = `O LOCATÁRIO declara receber o equipamento em perfeito estado de funcionamento e conservação, comprometendo-se a utilizá-lo corretamente e exclusivamente para a finalidade a que se destina.
+
+O LOCATÁRIO será responsável pela guarda do equipamento durante todo o período da locação.
+
+Em caso de danos causados por mau uso, perda, furto ou extravio, o LOCATÁRIO poderá ser responsabilizado pelos custos necessários para reparo ou reposição do equipamento.
+
+O equipamento deverá ser devolvido na data acordada neste contrato.
+
+A caução eventualmente paga será utilizada conforme as condições acordadas entre as partes.
+
+As partes declaram estar de acordo com as condições estabelecidas neste contrato.`;
+
+if(!config.nome){
+    config = {
+        nome:"",
+        telefone:"",
+        documento:"",
+        endereco:"",
+        termo:termoPadrao
+    };
+}
+
+if(!config.termo){
+    config.termo = termoPadrao;
+}
+
+salvarDados();
+
+
+/* =====================================================
+   UTILIDADES
+===================================================== */
+
+function salvarDados(){
+
+    localStorage.setItem("loc_clientes",JSON.stringify(clientes));
+
+    localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
+
+    localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
+
+    localStorage.setItem("loc_contratos",JSON.stringify(contratos));
+
+    localStorage.setItem("loc_config",JSON.stringify(config));
+}
+
+
+function gerarId(){
+
+    return Date.now().toString() + Math.random().toString(36).substring(2,8);
+
+}
+
+
+function dataHoje(){
+
+    return new Date().toISOString().split("T")[0];
+
+}
+
+
+function formatarData(data){
+
+    if(!data) return "-";
+
+    const partes = data.split("-");
+
+    if(partes.length !== 3) return data;
+
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+}
+
+
+function formatarMoeda(valor){
+
+    return Number(valor || 0).toLocaleString("pt-BR",{
+        style:"currency",
+        currency:"BRL"
+    });
+
+}
+
+
+function escapeHtml(texto){
+
+    if(texto === null || texto === undefined) return "";
+
+    return String(texto)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+function mostrarToast(mensagem){
+
+    const toast = document.getElementById("toast");
+
+    toast.textContent = mensagem;
+
+    toast.classList.add("show");
+
+    setTimeout(()=>{
+        toast.classList.remove("show");
+    },3000);
+
+}
+
+
+/* =====================================================
+   NAVEGAÇÃO
+===================================================== */
+
+const titulos = {
+    dashboard:"Dashboard",
+    clientes:"Clientes",
+    ferramentas:"Ferramentas",
+    locacoes:"Locações",
+    contratos:"Contratos",
+    manutencao:"Manutenção",
+    financeiro:"Financeiro",
+    configuracoes:"Configurações"
+};
+
+
+function mostrarSecao(id,botao){
+
+    document.querySelectorAll(".secao").forEach(sec=>{
+        sec.classList.remove("active");
+    });
+
+    document.getElementById(id).classList.add("active");
+
+    document.querySelectorAll(".menu button").forEach(btn=>{
+        btn.classList.remove("active");
+    });
+
+    if(botao){
+        botao.classList.add("active");
+    }
+
+    document.getElementById("tituloPagina").textContent = titulos[id] || "";
+
+    document.getElementById("sidebar").classList.remove("open");
+
+    atualizarTudo();
+
+}
+
+
+function toggleMenu(){
+
+    document.getElementById("sidebar").classList.toggle("open");
+
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+function abrirModal(titulo,html){
+
+    document.getElementById("modalTitulo").textContent = titulo;
+
+    document.getElementById("modalBody").innerHTML = html;
+
+    document.getElementById("modalOverlay").classList.add("show");
+
+}
+
+
+function fecharModal(){
+
+    document.getElementById("modalOverlay").classList.remove("show");
+
+    clienteSelecionadoLocacao = null;
+
+    ferramentaEditando = null;
+
+    clienteEditando = null;
+
+}
+
+
+/* =====================================================
+   CLIENTES
+===================================================== */
+
+function abrirNovoCliente(){
+
+    clienteEditando = null;
+
+    abrirModal("Novo Cliente",`
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+                <label>Nome *</label>
+                <input id="clienteNome" placeholder="Nome completo ou razão social">
+            </div>
+
+            <div class="form-group">
+                <label>CPF/CNPJ</label>
+                <input id="clienteDocumento">
+            </div>
+
+            <div class="form-group">
+                <label>Telefone</label>
+                <input id="clienteTelefone">
+            </div>
+
+            <div class="form-group">
+                <label>CEP</label>
+                <input id="clienteCep">
+            </div>
+
+            <div class="form-group">
+                <label>Número</label>
+                <input id="clienteNumero">
+            </div>
+
+            <div class="form-group full">
+                <label>Endereço</label>
+                <input id="clienteEndereco">
+            </div>
+
+            <div class="form-group">
+                <label>Cidade</label>
+                <input id="clienteCidade">
+            </div>
+
+            <div class="form-group">
+                <label>Estado</label>
+                <input id="clienteEstado" maxlength="2">
+            </div>
+
+            <div class="form-group full">
+                <label>Observações</label>
+                <textarea id="clienteObservacoes"></textarea>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button class="btn btn-secondary" onclick="fecharModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="salvarCliente()">
+                💾 Salvar cliente
+            </button>
+
+        </div>
+    `);
+
+}
+
+
+function salvarCliente(){
+
+    const nome = document.getElementById("clienteNome").value.trim();
+
+    if(!nome){
+
+        mostrarToast("Informe o nome do cliente.");
+
+        return;
+
+    }
+
+    const dados = {
+
+        nome,
+
+        documento:document.getElementById("clienteDocumento").value.trim(),
+
+        telefone:document.getElementById("clienteTelefone").value.trim(),
+
+        cep:document.getElementById("clienteCep").value.trim(),
+
+        numero:document.getElementById("clienteNumero").value.trim(),
+
+        endereco:document.getElementById("clienteEndereco").value.trim(),
+
+        cidade:document.getElementById("clienteCidade").value.trim(),
+
+        estado:document.getElementById("clienteEstado").value.trim().toUpperCase(),
+
+        observacoes:document.getElementById("clienteObservacoes").value.trim()
+
+    };
+
+
+    if(clienteEditando){
+
+        const index = clientes.findIndex(c=>c.id===clienteEditando);
+
+        if(index >= 0){
+
+            clientes[index] = {
+                ...clientes[index],
+                ...dados
+            };
+
+        }
+
+    }else{
+
+        clientes.push({
+            id:gerarId(),
+            ...dados,
+            criadoEm:new Date().toISOString()
+        });
+
+    }
+
+
+    salvarDados();
+
+    fecharModal();
+
+    renderClientes();
+
+    atualizarTudo();
+
+    mostrarToast("Cliente salvo com sucesso.");
+
+}
+
+
+function editarCliente(id){
+
+    const cliente = clientes.find(c=>c.id===id);
+
+    if(!cliente) return;
+
+    clienteEditando = id;
+
+    abrirModal("Editar Cliente",`
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+                <label>Nome *</label>
+                <input id="clienteNome" value="${escapeHtml(cliente.nome)}">
+            </div>
+
+            <div class="form-group">
+                <label>CPF/CNPJ</label>
+                <input id="clienteDocumento" value="${escapeHtml(cliente.documento)}">
+            </div>
+
+            <div class="form-group">
+                <label>Telefone</label>
+                <input id="clienteTelefone" value="${escapeHtml(cliente.telefone)}">
+            </div>
+
+            <div class="form-group">
+                <label>CEP</label>
+                <input id="clienteCep" value="${escapeHtml(cliente.cep)}">
+            </div>
+
+            <div class="form-group">
+                <label>Número</label>
+                <input id="clienteNumero" value="${escapeHtml(cliente.numero)}">
+            </div>
+
+            <div class="form-group full">
+                <label>Endereço</label>
+                <input id="clienteEndereco" value="${escapeHtml(cliente.endereco)}">
+            </div>
+
+            <div class="form-group">
+                <label>Cidade</label>
+                <input id="clienteCidade" value="${escapeHtml(cliente.cidade)}">
+            </div>
+
+            <div class="form-group">
+                <label>Estado</label>
+                <input id="clienteEstado" maxlength="2" value="${escapeHtml(cliente.estado)}">
+            </div>
+
+            <div class="form-group full">
+                <label>Observações</label>
+                <textarea id="clienteObservacoes">${escapeHtml(cliente.observacoes)}</textarea>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button class="btn btn-secondary" onclick="fecharModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="salvarCliente()">
+                💾 Atualizar cliente
+            </button>
+
+        </div>
+    `);
+
+}
+
+
+function excluirCliente(id){
+
+    const possuiLocacao = locacoes.some(l=>l.clienteId===id);
+
+    if(possuiLocacao){
+
+        mostrarToast("Este cliente possui locações vinculadas e não pode ser excluído.");
+
+        return;
+
+    }
+
+    if(!confirm("Deseja realmente excluir este cliente?")) return;
+
+    clientes = clientes.filter(c=>c.id!==id);
+
+    salvarDados();
+
+    renderClientes();
+
+    atualizarTudo();
+
+    mostrarToast("Cliente excluído.");
+
+}
+
+
+function montarEnderecoCliente(cliente){
+
+    if(!cliente) return "-";
+
+    const partes = [];
+
+    if(cliente.endereco) partes.push(cliente.endereco);
+
+    if(cliente.numero) partes.push("nº "+cliente.numero);
+
+    if(cliente.cidade) partes.push(cliente.cidade);
+
+    if(cliente.estado) partes.push("- "+cliente.estado);
+
+    if(cliente.cep) partes.push("CEP "+cliente.cep);
+
+    return partes.join(", ") || "-";
+
+}
+
+
+function renderClientes(){
+
+    const tbody = document.getElementById("listaClientes");
+
+    const busca = (document.getElementById("buscaClientes")?.value || "").toLowerCase();
+
+    const lista = clientes.filter(c=>{
+
+        return (
+
+            c.nome?.toLowerCase().includes(busca) ||
+
+            c.documento?.toLowerCase().includes(busca) ||
+
+            c.telefone?.toLowerCase().includes(busca)
+
+        );
+
+    });
+
+
+    if(!lista.length){
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty">
+                    Nenhum cliente cadastrado.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML = lista.map(c=>`
+
+        <tr>
+
+            <td>
+                <strong>${escapeHtml(c.nome)}</strong>
+            </td>
+
+            <td>${escapeHtml(c.documento || "-")}</td>
+
+            <td>${escapeHtml(c.telefone || "-")}</td>
+
+            <td>${escapeHtml(c.cidade || "-")}</td>
+
+            <td>
+
+                <div class="actions">
+
+                    <button
+                        class="btn btn-secondary btn-sm"
+                        onclick="editarCliente('${c.id}')">
+                        Editar
+                    </button>
+
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="excluirCliente('${c.id}')">
+                        Excluir
+                    </button>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+/* =====================================================
+   FERRAMENTAS
+===================================================== */
+
+function abrirNovaFerramenta(){
+
+    ferramentaEditando = null;
+
+    abrirModal("Nova Ferramenta",`
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+
+                <label>Nome da ferramenta *</label>
+
+                <input id="ferramentaNome" placeholder="Ex.: Betoneira 400L">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Código da ferramenta *</label>
+
+                <input id="ferramentaCodigo" placeholder="Ex.: BET-001">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Voltagem</label>
+
+                <select id="ferramentaVoltagem">
+
+                    <option value="">Não informado</option>
+                    <option>110V</option>
+                    <option>127V</option>
+                    <option>220V</option>
+                    <option>Bivolt</option>
+                    <option>Gasolina</option>
+                    <option>Diesel</option>
+                    <option>Manual</option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Categoria</label>
+
+                <input id="ferramentaCategoria" placeholder="Ex.: Construção">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor diária</label>
+
+                <input id="ferramentaDiaria" type="number" step="0.01" min="0">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor semanal</label>
+
+                <input id="ferramentaSemanal" type="number" step="0.01" min="0">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor mensal</label>
+
+                <input id="ferramentaMensal" type="number" step="0.01" min="0">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Status</label>
+
+                <select id="ferramentaStatus">
+
+                    <option value="Disponível">Disponível</option>
+                    <option value="Manutenção">Manutenção</option>
+                    <option value="Reservada">Reservada</option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group full">
+
+                <label>Observações</label>
+
+                <textarea id="ferramentaObservacoes"></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button class="btn btn-secondary" onclick="fecharModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="salvarFerramenta()">
+                💾 Salvar ferramenta
+            </button>
+
+        </div>
+
+    `);
+
+}
+
+
+function editarFerramenta(id){
+
+    const f = ferramentas.find(x=>x.id===id);
+
+    if(!f) return;
+
+    ferramentaEditando = id;
+
+    abrirModal("Editar Ferramenta",`
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+
+                <label>Nome da ferramenta *</label>
+
+                <input id="ferramentaNome" value="${escapeHtml(f.nome)}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Código *</label>
+
+                <input id="ferramentaCodigo" value="${escapeHtml(f.codigo)}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Voltagem</label>
+
+                <select id="ferramentaVoltagem">
+
+                    ${["","110V","127V","220V","Bivolt","Gasolina","Diesel","Manual"].map(v=>`
+                        <option value="${v}" ${f.voltagem===v?"selected":""}>
+                            ${v || "Não informado"}
+                        </option>
+                    `).join("")}
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Categoria</label>
+
+                <input id="ferramentaCategoria" value="${escapeHtml(f.categoria)}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor diária</label>
+
+                <input id="ferramentaDiaria" type="number" step="0.01" value="${f.diaria || 0}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor semanal</label>
+
+                <input id="ferramentaSemanal" type="number" step="0.01" value="${f.semanal || 0}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Valor mensal</label>
+
+                <input id="ferramentaMensal" type="number" step="0.01" value="${f.mensal || 0}">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Status</label>
+
+                <select id="ferramentaStatus">
+
+                    ${["Disponível","Manutenção","Reservada"].map(v=>`
+                        <option ${f.status===v?"selected":""}>
+                            ${v}
+                        </option>
+                    `).join("")}
+
+                </select>
+
+            </div>
+
+            <div class="form-group full">
+
+                <label>Observações</label>
+
+                <textarea id="ferramentaObservacoes">${escapeHtml(f.observacoes)}</textarea>
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button class="btn btn-secondary" onclick="fecharModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="salvarFerramenta()">
+                💾 Atualizar ferramenta
+            </button>
+
+        </div>
+
+    `);
+
+}
+
+
+function salvarFerramenta(){
+
+    const nome = document.getElementById("ferramentaNome").value.trim();
+
+    const codigo = document.getElementById("ferramentaCodigo").value.trim();
+
+    if(!nome || !codigo){
+
+        mostrarToast("Nome e código são obrigatórios.");
+
+        return;
+
+    }
+
+
+    const dados = {
+
+        nome,
+
+        codigo,
+
+        voltagem:document.getElementById("ferramentaVoltagem").value,
+
+        categoria:document.getElementById("ferramentaCategoria").value.trim(),
+
+        diaria:Number(document.getElementById("ferramentaDiaria").value || 0),
+
+        semanal:Number(document.getElementById("ferramentaSemanal").value || 0),
+
+        mensal:Number(document.getElementById("ferramentaMensal").value || 0),
+
+        status:document.getElementById("ferramentaStatus").value,
+
+        observacoes:document.getElementById("ferramentaObservacoes").value.trim()
+
+    };
+
+
+    if(ferramentaEditando){
+
+        const index = ferramentas.findIndex(f=>f.id===ferramentaEditando);
+
+        if(index>=0){
+
+            ferramentas[index] = {
+                ...ferramentas[index],
+                ...dados
+            };
+
+        }
+
+    }else{
+
+        ferramentas.push({
+            id:gerarId(),
+            ...dados,
+            criadoEm:new Date().toISOString()
+        });
+
+    }
+
+
+    salvarDados();
+
+    fecharModal();
+
+    renderFerramentas();
+
+    atualizarTudo();
+
+    mostrarToast("Ferramenta salva com sucesso.");
+
+}
+
+
+function excluirFerramenta(id){
+
+    const possuiLocacao = locacoes.some(l=>l.ferramentaId===id);
+
+    if(possuiLocacao){
+
+        mostrarToast("Esta ferramenta possui histórico de locação e não pode ser excluída.");
+
+        return;
+
+    }
+
+    if(!confirm("Deseja realmente excluir esta ferramenta?")) return;
+
+    ferramentas = ferramentas.filter(f=>f.id!==id);
+
+    salvarDados();
+
+    renderFerramentas();
+
+    atualizarTudo();
+
+    mostrarToast("Ferramenta excluída.");
+
+}
+
+
+function badgeStatusFerramenta(status){
+
+    let classe = "badge-gray";
+
+    if(status==="Disponível") classe="badge-green";
+
+    if(status==="Manutenção") classe="badge-red";
+
+    if(status==="Reservada") classe="badge-yellow";
+
+    if(status==="Alugada") classe="badge-blue";
+
+    return `<span class="badge ${classe}">${escapeHtml(status)}</span>`;
+
+}
+
+
+function renderFerramentas(){
+
+    const tbody = document.getElementById("listaFerramentas");
+
+    const busca = (document.getElementById("buscaFerramentas")?.value || "").toLowerCase();
+
+    const lista = ferramentas.filter(f=>{
+
+        return (
+
+            f.nome?.toLowerCase().includes(busca) ||
+
+            f.codigo?.toLowerCase().includes(busca) ||
+
+            f.categoria?.toLowerCase().includes(busca)
+
+        );
+
+    });
+
+
+    if(!lista.length){
+
+        tbody.innerHTML=`
+            <tr>
+                <td colspan="8" class="empty">
+                    Nenhuma ferramenta cadastrada.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML=lista.map(f=>`
+
+        <tr>
+
+            <td><strong>${escapeHtml(f.nome)}</strong></td>
+
+            <td>${escapeHtml(f.codigo)}</td>
+
+            <td>${escapeHtml(f.voltagem || "-")}</td>
+
+            <td>${formatarMoeda(f.diaria)}</td>
+
+            <td>${formatarMoeda(f.semanal)}</td>
+
+            <td>${formatarMoeda(f.mensal)}</td>
+
+            <td>${badgeStatusFerramenta(f.status)}</td>
+
+            <td>
+
+                <div class="actions">
+
+                    <button
+                        class="btn btn-secondary btn-sm"
+                        onclick="editarFerramenta('${f.id}')">
+                        Editar
+                    </button>
+
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="excluirFerramenta('${f.id}')">
+                        Excluir
+                    </button>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+/* =====================================================
+   NOVA LOCAÇÃO
+===================================================== */
+
+function abrirNovaLocacao(){
+
+    clienteSelecionadoLocacao = null;
+
+    abrirModal("Nova Locação",`
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+
+                <label>Cliente *</label>
+
+                <div class="cliente-search">
+
+                    <input
+                        id="locacaoClienteBusca"
+                        autocomplete="off"
+                        placeholder="Digite o nome do cliente..."
+                        oninput="buscarClienteLocacao()"
+                        onfocus="buscarClienteLocacao()"
+                    >
+
+                    <input
+                        type="hidden"
+                        id="locacaoCliente"
+                    >
+
+                    <div
+                        id="clientesBuscaDropdown"
+                        class="cliente-dropdown">
+                    </div>
+
+                </div>
+
+                <div
+                    id="clienteSelecionadoInfo"
+                    class="cliente-selecionado">
+                </div>
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <label>Ferramenta *</label>
+
+                <select
+                    id="locacaoFerramenta"
+                    onchange="alterarTipoCobranca()">
+
+                    <option value="">Selecione a ferramenta</option>
+
+                    ${ferramentas
+                        .filter(f=>f.status==="Disponível")
+                        .map(f=>`
+                            <option value="${f.id}">
+                                ${escapeHtml(f.nome)}
+                                — ${escapeHtml(f.codigo)}
+                            </option>
+                        `).join("")}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Data de retirada *</label>
+
+                <input
+                    id="locacaoRetirada"
+                    type="date"
+                    value="${dataHoje()}">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Data de devolução *</label>
+
+                <input
+                    id="locacaoDevolucao"
+                    type="date"
+                    value="${dataHoje()}">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Tipo de cobrança *</label>
+
+                <select
+                    id="locacaoTipoCobranca"
+                    onchange="alterarTipoCobranca()">
+
+                    <option value="diaria">Diária</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensal">Mensal</option>
+                    <option value="personalizado">Valor personalizado</option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Valor da locação *</label>
+
+                <input
+                    id="locacaoValor"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Caução</label>
+
+                <input
+                    id="locacaoCaucao"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="0">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Forma de pagamento</label>
+
+                <select id="locacaoPagamento">
+
+                    <option value="Pix">Pix</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartão">Cartão</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Outro">Outro</option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <h3 style="margin-bottom:15px;">
+                    📍 Endereço da locação
+                </h3>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>CEP</label>
+
+                <input id="locacaoCep">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Número</label>
+
+                <input id="locacaoNumero">
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <label>Endereço</label>
+
+                <input id="locacaoEndereco">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Bairro</label>
+
+                <input id="locacaoBairro">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Cidade</label>
+
+                <input id="locacaoCidade">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Estado</label>
+
+                <input id="locacaoEstado" maxlength="2">
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <label>Referência</label>
+
+                <input
+                    id="locacaoReferencia"
+                    placeholder="Ex.: próximo ao mercado...">
+
+            </div>
+
+
+            <div class="form-group full">
+
+                <label>Observações</label>
+
+                <textarea id="locacaoObservacoes"></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button class="btn btn-secondary" onclick="fecharModal()">
+                Cancelar
+            </button>
+
+            <button class="btn btn-primary" onclick="salvarLocacao()">
+                📦 Criar locação
+            </button>
+
+        </div>
+
+    `);
+
+}
+
+
+function buscarClienteLocacao(){
+
+    const input = document.getElementById("locacaoClienteBusca");
+
+    const dropdown = document.getElementById("clientesBuscaDropdown");
+
+    if(!input || !dropdown) return;
+
+    const texto = input.value.trim().toLowerCase();
+
+
+    let lista = clientes;
+
+    if(texto){
+
+        lista = clientes.filter(c=>{
+
+            return (
+
+                c.nome?.toLowerCase().includes(texto) ||
+
+                c.telefone?.toLowerCase().includes(texto) ||
+
+                c.documento?.toLowerCase().includes(texto)
+
+            );
+
+        });
+
+    }
+
+
+    if(!lista.length){
+
+        dropdown.innerHTML=`
+            <div class="empty" style="padding:20px;">
+                Nenhum cliente encontrado.
+            </div>
+        `;
+
+        dropdown.classList.add("show");
+
+        return;
+
+    }
+
+
+    dropdown.innerHTML=lista.slice(0,20).map(c=>`
+
+        <div
+            class="cliente-item"
+            onclick="selecionarClienteLocacao('${c.id}')">
+
+            <strong>${escapeHtml(c.nome)}</strong>
+
+            <small>
+                ${escapeHtml(c.telefone || "Sem telefone")}
+                ${c.documento ? " • "+escapeHtml(c.documento) : ""}
+            </small>
+
+        </div>
+
+    `).join("");
+
+
+    dropdown.classList.add("show");
+
+}
+
+
+function selecionarClienteLocacao(id){
+
+    const cliente = clientes.find(c=>c.id===id);
+
+    if(!cliente) return;
+
+    clienteSelecionadoLocacao = id;
+
+    document.getElementById("locacaoCliente").value = id;
+
+    document.getElementById("locacaoClienteBusca").value = cliente.nome;
+
+    const info = document.getElementById("clienteSelecionadoInfo");
+
+    info.textContent = `✓ Cliente selecionado: ${cliente.nome}`;
+
+    info.style.display="block";
+
+    document.getElementById("clientesBuscaDropdown").classList.remove("show");
+
+}
+
+
+function alterarTipoCobranca(){
+
+    const ferramentaId = document.getElementById("locacaoFerramenta")?.value;
+
+    const tipo = document.getElementById("locacaoTipoCobranca")?.value;
+
+    const campo = document.getElementById("locacaoValor");
+
+    if(!campo) return;
+
+    const ferramenta = ferramentas.find(f=>f.id===ferramentaId);
+
+    if(!ferramenta){
+
+        campo.value="";
+
+        return;
+
+    }
+
+
+    if(tipo==="diaria"){
+
+        campo.value = ferramenta.diaria || 0;
+
+        campo.readOnly = true;
+
+    }
+
+    else if(tipo==="semanal"){
+
+        campo.value = ferramenta.semanal || 0;
+
+        campo.readOnly = true;
+
+    }
+
+    else if(tipo==="mensal"){
+
+        campo.value = ferramenta.mensal || 0;
+
+        campo.readOnly = true;
+
+    }
+
+    else{
+
+        campo.value="";
+
+        campo.readOnly=false;
+
+        campo.focus();
+
+    }
+
+}
+
+
+function salvarLocacao(){
+
+    const clienteId = document.getElementById("locacaoCliente").value;
+
+    const ferramentaId = document.getElementById("locacaoFerramenta").value;
+
+    const retirada = document.getElementById("locacaoRetirada").value;
+
+    const devolucao = document.getElementById("locacaoDevolucao").value;
+
+    const tipoCobranca = document.getElementById("locacaoTipoCobranca").value;
+
+    const valor = Number(document.getElementById("locacaoValor").value || 0);
+
+
+    if(!clienteId){
+
+        mostrarToast("Selecione um cliente.");
+
+        return;
+
+    }
+
+
+    if(!ferramentaId){
+
+        mostrarToast("Selecione uma ferramenta.");
+
+        return;
+
+    }
+
+
+    if(!retirada || !devolucao){
+
+        mostrarToast("Informe as datas.");
+
+        return;
+
+    }
+
+
+    if(devolucao < retirada){
+
+        mostrarToast("A devolução não pode ser anterior à retirada.");
+
+        return;
+
+    }
+
+
+    if(valor <= 0){
+
+        mostrarToast("Informe um valor válido.");
+
+        return;
+
+    }
+
+
+    const ferramenta = ferramentas.find(f=>f.id===ferramentaId);
+
+    if(!ferramenta){
+
+        mostrarToast("Ferramenta não encontrada.");
+
+        return;
+
+    }
+
+
+    if(ferramenta.status !== "Disponível"){
+
+        mostrarToast("Esta ferramenta não está disponível.");
+
+        return;
+
+    }
+
+
+    const locacao = {
+
+        id:gerarId(),
+
+        clienteId,
+
+        ferramentaId,
+
+        retirada,
+
+        devolucao,
+
+        tipoCobranca,
+
+        valor,
+
+        caucao:Number(document.getElementById("locacaoCaucao").value || 0),
+
+        pagamento:document.getElementById("locacaoPagamento").value,
+
+        localLocacao:{
+
+            cep:document.getElementById("locacaoCep").value.trim(),
+
+            numero:document.getElementById("locacaoNumero").value.trim(),
+
+            endereco:document.getElementById("locacaoEndereco").value.trim(),
+
+            bairro:document.getElementById("locacaoBairro").value.trim(),
+
+            cidade:document.getElementById("locacaoCidade").value.trim(),
+
+            estado:document.getElementById("locacaoEstado").value.trim().toUpperCase(),
+
+            referencia:document.getElementById("locacaoReferencia").value.trim()
+
+        },
+
+        observacoes:document.getElementById("locacaoObservacoes").value.trim(),
+
+        status:"Ativa",
+
+        criadaEm:new Date().toISOString()
+
+    };
+
+
+    locacoes.push(locacao);
+
+
+    ferramenta.status="Alugada";
+
+
+    const numeroContrato = gerarNumeroContrato();
+
+    const contrato = {
+
+        id:gerarId(),
+
+        numero:numeroContrato,
+
+        locacaoId:locacao.id,
+
+        status:"Ativo",
+
+        criadoEm:new Date().toISOString()
+
+    };
+
+
+    contratos.push(contrato);
+
+
+    salvarDados();
+
+    fecharModal();
+
+    renderLocacoes();
+
+    renderFerramentas();
+
+    renderContratos();
+
+    atualizarTudo();
+
+    mostrarToast(`Locação criada. Contrato nº ${numeroContrato}.`);
+
+}
+
+
+function finalizarLocacao(id){
+
+    const locacao = locacoes.find(l=>l.id===id);
+
+    if(!locacao) return;
+
+
+    if(!confirm("Deseja finalizar esta locação?")) return;
+
+
+    locacao.status="Finalizada";
+
+
+    const ferramenta = ferramentas.find(f=>f.id===locacao.ferramentaId);
+
+    if(ferramenta){
+
+        ferramenta.status="Disponível";
+
+    }
+
+
+    const contrato = contratos.find(c=>c.locacaoId===id);
+
+    if(contrato){
+
+        contrato.status="Finalizado";
+
+    }
+
+
+    salvarDados();
+
+    renderLocacoes();
+
+    renderFerramentas();
+
+    renderContratos();
+
+    atualizarTudo();
+
+    mostrarToast("Locação finalizada.");
+
+}
+
+
+function excluirLocacao(id){
+
+    if(!confirm("Excluir esta locação?")) return;
+
+
+    const locacao = locacoes.find(l=>l.id===id);
+
+    if(!locacao) return;
+
+
+    const ferramenta = ferramentas.find(f=>f.id===locacao.ferramentaId);
+
+    if(ferramenta && ferramenta.status==="Alugada"){
+
+        ferramenta.status="Disponível";
+
+    }
+
+
+    locacoes = locacoes.filter(l=>l.id!==id);
+
+    contratos = contratos.filter(c=>c.locacaoId!==id);
+
+
+    salvarDados();
+
+    renderLocacoes();
+
+    renderFerramentas();
+
+    renderContratos();
+
+    atualizarTudo();
+
+    mostrarToast("Locação excluída.");
+
+}
+
+
+function badgeStatusLocacao(status){
+
+    if(status==="Ativa"){
+
+        return `<span class="badge badge-blue">Ativa</span>`;
+
+    }
+
+    if(status==="Finalizada"){
+
+        return `<span class="badge badge-green">Finalizada</span>`;
+
+    }
+
+    return `<span class="badge badge-gray">${escapeHtml(status)}</span>`;
+
+}
+
+
+function textoCobranca(tipo){
+
+    const nomes={
+
+        diaria:"Diária",
+
+        semanal:"Semanal",
+
+        mensal:"Mensal",
+
+        personalizado:"Personalizado"
+
+    };
+
+    return nomes[tipo] || tipo || "-";
+
+}
+
+
+function renderLocacoes(){
+
+    const tbody = document.getElementById("listaLocacoes");
+
+    const busca = (document.getElementById("buscaLocacoes")?.value || "").toLowerCase();
+
+
+    const lista = locacoes.filter(l=>{
+
+        const cliente = clientes.find(c=>c.id===l.clienteId);
+
+        const ferramenta = ferramentas.find(f=>f.id===l.ferramentaId);
+
+
+        return (
+
+            cliente?.nome?.toLowerCase().includes(busca) ||
+
+            ferramenta?.nome?.toLowerCase().includes(busca) ||
+
+            ferramenta?.codigo?.toLowerCase().includes(busca)
+
+        );
+
+    });
+
+
+    if(!lista.length){
+
+        tbody.innerHTML=`
+            <tr>
+                <td colspan="8" class="empty">
+                    Nenhuma locação cadastrada.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML=lista.slice().reverse().map(l=>{
+
+        const cliente = clientes.find(c=>c.id===l.clienteId);
+
+        const ferramenta = ferramentas.find(f=>f.id===l.ferramentaId);
+
+        const contrato = contratos.find(c=>c.locacaoId===l.id);
+
+
+        return `
+
+            <tr>
+
+                <td>
+                    <strong>
+                        ${escapeHtml(cliente?.nome || "Cliente removido")}
+                    </strong>
+                </td>
+
+                <td>
+                    ${escapeHtml(ferramenta?.nome || "-")}
+                    <br>
+                    <small style="color:#6b7280;">
+                        ${escapeHtml(ferramenta?.codigo || "")}
+                    </small>
+                </td>
+
+                <td>${formatarData(l.retirada)}</td>
+
+                <td>${formatarData(l.devolucao)}</td>
+
+                <td>${textoCobranca(l.tipoCobranca)}</td>
+
+                <td>${formatarMoeda(l.valor)}</td>
+
+                <td>${badgeStatusLocacao(l.status)}</td>
+
+                <td>
+
+                    <div class="actions">
+
+                        ${contrato ? `
+                            <button
+                                class="btn btn-primary btn-sm"
+                                onclick="visualizarContrato('${contrato.id}')">
+                                Contrato
+                            </button>
+                        ` : ""}
+
+                        ${l.status==="Ativa" ? `
+                            <button
+                                class="btn btn-success btn-sm"
+                                onclick="finalizarLocacao('${l.id}')">
+                                Finalizar
+                            </button>
+                        ` : ""}
+
+                        <button
+                            class="btn btn-danger btn-sm"
+                            onclick="excluirLocacao('${l.id}')">
+                            Excluir
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+}
+
+
+/* =====================================================
+   ENDEREÇO LOCAÇÃO
+===================================================== */
+
+function montarEnderecoLocacao(local){
+
+    if(!local) return "-";
+
+    const partes=[];
+
+    if(local.endereco) partes.push(local.endereco);
+
+    if(local.numero) partes.push("nº "+local.numero);
+
+    if(local.bairro) partes.push(local.bairro);
+
+    if(local.cidade) partes.push(local.cidade);
+
+    if(local.estado) partes.push("- "+local.estado);
+
+    if(local.cep) partes.push("CEP "+local.cep);
+
+    if(local.referencia) partes.push("Ref.: "+local.referencia);
+
+    return partes.join(", ") || "-";
+
+}
+
+
+/* =====================================================
+   CONTRATOS
+===================================================== */
+
+function gerarNumeroContrato(){
+
+    if(!contratos.length){
+
+        return "0001";
+
+    }
+
+
+    const numeros = contratos.map(c=>{
+
+        const numero = parseInt(String(c.numero).replace(/\D/g,""),10);
+
+        return isNaN(numero) ? 0 : numero;
+
+    });
+
+
+    const maior = Math.max(...numeros);
+
+    return String(maior+1).padStart(4,"0");
+
+}
+
+
+function badgeStatusContrato(status){
+
+    if(status==="Ativo"){
+
+        return `<span class="badge badge-blue">Ativo</span>`;
+
+    }
+
+    if(status==="Finalizado"){
+
+        return `<span class="badge badge-green">Finalizado</span>`;
+
+    }
+
+    if(status==="Cancelado"){
+
+        return `<span class="badge badge-red">Cancelado</span>`;
+
+    }
+
+    return `<span class="badge badge-gray">${escapeHtml(status)}</span>`;
+
+}
+
+
+function renderContratos(){
+
+    const tbody=document.getElementById("listaContratos");
+
+
+    if(!contratos.length){
+
+        tbody.innerHTML=`
+            <tr>
+                <td colspan="6" class="empty">
+                    Nenhum contrato gerado.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML=contratos.slice().reverse().map(c=>{
+
+        const locacao=locacoes.find(l=>l.id===c.locacaoId);
+
+        const cliente=clientes.find(x=>x.id===locacao?.clienteId);
+
+        const ferramenta=ferramentas.find(x=>x.id===locacao?.ferramentaId);
+
+
+        return `
+
+            <tr>
+
+                <td>
+                    <strong>Contrato #${escapeHtml(c.numero)}</strong>
+                </td>
+
+                <td>${escapeHtml(cliente?.nome || "-")}</td>
+
+                <td>${escapeHtml(ferramenta?.nome || "-")}</td>
+
+                <td>${formatarData(locacao?.retirada)}</td>
+
+                <td>${badgeStatusContrato(c.status)}</td>
+
+                <td>
+
+                    <button
+                        class="btn btn-primary btn-sm"
+                        onclick="visualizarContrato('${c.id}')">
+                        Visualizar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+}
+
+
+function visualizarContrato(id){
+
+    const contrato=contratos.find(c=>c.id===id);
+
+    if(!contrato) return;
+
+
+    const locacao=locacoes.find(l=>l.id===contrato.locacaoId);
+
+    if(!locacao) return;
+
+
+    const cliente=clientes.find(c=>c.id===locacao.clienteId);
+
+    const ferramenta=ferramentas.find(f=>f.id===locacao.ferramentaId);
+
+
+    abrirModal(`Contrato #${contrato.numero}`,`
+
+        <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:15px;">
+
+            <button
+                class="btn btn-primary"
+                onclick="window.print()">
+                🖨️ Imprimir / Salvar PDF
+            </button>
+
+        </div>
+
+
+        <div class="contrato">
+
+            <h1>CONTRATO DE LOCAÇÃO DE EQUIPAMENTO</h1>
+
+            <div class="numero">
+                Contrato nº ${escapeHtml(contrato.numero)}
+            </div>
+
+
+            <h3>1. LOCADOR</h3>
+
+            <p>
+                <strong>${escapeHtml(config.nome || "Empresa")}</strong>
+            </p>
+
+            <p>
+                CPF/CNPJ: ${escapeHtml(config.documento || "-")}
+            </p>
+
+            <p>
+                Telefone: ${escapeHtml(config.telefone || "-")}
+            </p>
+
+            <p>
+                Endereço: ${escapeHtml(config.endereco || "-")}
+            </p>
+
+
+            <h3>2. LOCATÁRIO</h3>
+
+            <p>
+                <strong>${escapeHtml(cliente?.nome || "-")}</strong>
+            </p>
+
+            <p>
+                CPF/CNPJ: ${escapeHtml(cliente?.documento || "-")}
+            </p>
+
+            <p>
+                Telefone: ${escapeHtml(cliente?.telefone || "-")}
+            </p>
+
+            <p>
+                Endereço: ${escapeHtml(montarEnderecoCliente(cliente))}
+            </p>
+
+
+            <h3>3. EQUIPAMENTO</h3>
+
+            <p>
+                Equipamento:
+                <strong>${escapeHtml(ferramenta?.nome || "-")}</strong>
+            </p>
+
+            <p>
+                Código:
+                ${escapeHtml(ferramenta?.codigo || "-")}
+            </p>
+
+            <p>
+                Voltagem:
+                ${escapeHtml(ferramenta?.voltagem || "-")}
+            </p>
+
+
+            <h3>4. LOCAL DA LOCAÇÃO</h3>
+
+            <p>
+                ${escapeHtml(montarEnderecoLocacao(locacao.localLocacao))}
+            </p>
+
+
+            <h3>5. PERÍODO E VALORES</h3>
+
+            <p>
+                Retirada:
+                <strong>${formatarData(locacao.retirada)}</strong>
+            </p>
+
+            <p>
+                Devolução:
+                <strong>${formatarData(locacao.devolucao)}</strong>
+            </p>
+
+            <p>
+                Tipo de cobrança:
+                <strong>${textoCobranca(locacao.tipoCobranca)}</strong>
+            </p>
+
+            <p>
+                Valor da locação:
+                <strong>${formatarMoeda(locacao.valor)}</strong>
+            </p>
+
+            <p>
+                Caução:
+                <strong>${formatarMoeda(locacao.caucao)}</strong>
+            </p>
+
+            <p>
+                Forma de pagamento:
+                <strong>${escapeHtml(locacao.pagamento || "-")}</strong>
+            </p>
+
+
+            <h3>6. TERMOS E CONDIÇÕES</h3>
+
+            <p style="white-space:pre-line;">
+                ${escapeHtml(config.termo || termoPadrao)}
+            </p>
+
+
+            <h3>7. OBSERVAÇÕES</h3>
+
+            <p>
+                ${escapeHtml(locacao.observacoes || "Nenhuma observação.")}
+            </p>
+
+
+            <div class="assinaturas">
+
+                <div class="assinatura">
+                    ${escapeHtml(config.nome || "LOCADOR")}
+                </div>
+
+                <div class="assinatura">
+                    ${escapeHtml(cliente?.nome || "LOCATÁRIO")}
+                </div>
+
+            </div>
+
+        </div>
+
+    `);
+
+}
+
+
+/* =====================================================
+   MANUTENÇÃO
+===================================================== */
+
+function renderManutencao(){
+
+    const tbody=document.getElementById("listaManutencao");
+
+    const lista=ferramentas.filter(f=>f.status==="Manutenção");
+
+
+    if(!lista.length){
+
+        tbody.innerHTML=`
+            <tr>
+                <td colspan="6" class="empty">
+                    Nenhuma ferramenta em manutenção.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML=lista.map(f=>`
+
+        <tr>
+
+            <td><strong>${escapeHtml(f.nome)}</strong></td>
+
+            <td>${escapeHtml(f.codigo)}</td>
+
+            <td>${escapeHtml(f.voltagem || "-")}</td>
+
+            <td>${badgeStatusFerramenta(f.status)}</td>
+
+            <td>${escapeHtml(f.observacoes || "-")}</td>
+
+            <td>
+
+                <button
+                    class="btn btn-success btn-sm"
+                    onclick="liberarManutencao('${f.id}')">
+                    Liberar
+                </button>
+
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+function liberarManutencao(id){
+
+    const f=ferramentas.find(x=>x.id===id);
+
+    if(!f) return;
+
+    f.status="Disponível";
+
+    salvarDados();
+
+    renderManutencao();
+
+    renderFerramentas();
+
+    atualizarTudo();
+
+    mostrarToast("Ferramenta liberada.");
+
+}
+
+
+/* =====================================================
+   FINANCEIRO
+===================================================== */
+
+function atualizarFinanceiro(){
+
+    const total=locacoes.length;
+
+    const faturamento=locacoes.reduce((s,l)=>s+Number(l.valor||0),0);
+
+    const caucoes=locacoes.reduce((s,l)=>s+Number(l.caucao||0),0);
+
+    const ticket=total ? faturamento/total : 0;
+
+
+    document.getElementById("finLocacoes").textContent=total;
+
+    document.getElementById("finFaturamento").textContent=formatarMoeda(faturamento);
+
+    document.getElementById("finCaucoes").textContent=formatarMoeda(caucoes);
+
+    document.getElementById("finTicket").textContent=formatarMoeda(ticket);
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function atualizarDashboard(){
+
+    const ativas=locacoes.filter(l=>l.status==="Ativa");
+
+    const faturamento=locacoes.reduce((s,l)=>s+Number(l.valor||0),0);
+
+
+    document.getElementById("dashClientes").textContent=clientes.length;
+
+    document.getElementById("dashFerramentas").textContent=ferramentas.length;
+
+    document.getElementById("dashLocacoes").textContent=ativas.length;
+
+    document.getElementById("dashFaturamento").textContent=formatarMoeda(faturamento);
+
+
+    const tbody=document.getElementById("dashboardLocacoes");
+
+
+    const recentes=locacoes.slice().reverse().slice(0,8);
+
+
+    if(!recentes.length){
+
+        tbody.innerHTML=`
+            <tr>
+                <td colspan="5" class="empty">
+                    Nenhuma locação cadastrada.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML=recentes.map(l=>{
+
+        const cliente=clientes.find(c=>c.id===l.clienteId);
+
+        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
+
+
+        return `
+
+            <tr>
+
+                <td>${escapeHtml(cliente?.nome || "-")}</td>
+
+                <td>${escapeHtml(ferramenta?.nome || "-")}</td>
+
+                <td>${textoCobranca(l.tipoCobranca)}</td>
+
+                <td>${formatarMoeda(l.valor)}</td>
+
+                <td>${badgeStatusLocacao(l.status)}</td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+}
+
+
+/* =====================================================
+   CONFIGURAÇÕES
+===================================================== */
+
+function carregarConfiguracoes(){
+
+    document.getElementById("configNome").value=config.nome || "";
+
+    document.getElementById("configTelefone").value=config.telefone || "";
+
+    document.getElementById("configDocumento").value=config.documento || "";
+
+    document.getElementById("configEndereco").value=config.endereco || "";
+
+    document.getElementById("configTermo").value=config.termo || termoPadrao;
+
+    document.getElementById("empresaTopbar").textContent=
+        config.nome || "Sistema de Locação";
+
+}
+
+
+function salvarConfiguracoes(){
+
+    config.nome=document.getElementById("configNome").value.trim();
+
+    config.telefone=document.getElementById("configTelefone").value.trim();
+
+    config.documento=document.getElementById("configDocumento").value.trim();
+
+    config.endereco=document.getElementById("configEndereco").value.trim();
+
+    config.termo=document.getElementById("configTermo").value.trim();
+
+
+    if(!config.termo){
+
+        config.termo=termoPadrao;
+
+    }
+
+
+    salvarDados();
+
+    carregarConfiguracoes();
+
+    atualizarTudo();
+
+    mostrarToast("Configurações salvas.");
+
+}
+
+
+/* =====================================================
+   ATUALIZAR TUDO
+===================================================== */
+
+function atualizarTudo(){
+
+    renderClientes();
+
+    renderFerramentas();
+
+    renderLocacoes();
+
+    renderContratos();
+
+    renderManutencao();
+
+    atualizarDashboard();
+
+    atualizarFinanceiro();
+
+    carregarConfiguracoes();
+
+}
+
+
+/* =====================================================
+   CLIQUE FORA DA BUSCA
+===================================================== */
+
+document.addEventListener("click",function(event){
+
+    const area=document.querySelector(".cliente-search");
+
+    const dropdown=document.getElementById("clientesBuscaDropdown");
+
+    if(!area || !dropdown) return;
+
+    if(!area.contains(event.target)){
+
+        dropdown.classList.remove("show");
+
+    }
+
+});
+
+
+/* =====================================================
+   FECHAR MODAL CLICANDO FORA
+===================================================== */
+
+document.getElementById("modalOverlay").addEventListener("click",function(e){
+
+    if(e.target===this){
+
+        fecharModal();
+
+    }
+
+});
+
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+    atualizarTudo();
+
+});
+
+
+</script>
+
+</body>
+</html>
