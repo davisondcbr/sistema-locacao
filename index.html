@@ -1463,49 +1463,52 @@ if(!config.termo){
    UTILIDADES E BANCO DE DADOS (GOOGLE SHEETS)
 ===================================================== */
 
-// URL DA SUA API GOOGLE APPS SCRIPT ATUALIZADA
-const API_URL = "https://script.google.com/macros/s/AKfycbx413MQvQcXVzzf4vsBy3iHyxAWGIMiJPeoBuNjooBD0_kV_v5w-b8Sp9i1BHHw9mPpkg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwg_XlBV72kzFJ9TrCWKcmmnlLx4gYuElGE-Me2uInEe0Qck3MwS6hhVfNTGK3Q9aXcnA/exec";
 
 function salvarDados(){
-    // 1. Salva localmente para a tela atualizar rápido sem travamentos
+    // 1. Salva localmente para velocidade imediata no ecrã
     localStorage.setItem("loc_clientes",JSON.stringify(clientes));
     localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
     localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
     localStorage.setItem("loc_contratos",JSON.stringify(contratos));
     localStorage.setItem("loc_config",JSON.stringify(config));
 
-    // 2. Envia para a nuvem em segundo plano
+    // 2. Envia para a nuvem de forma compatível
     fetch(API_URL, {
         method: "POST",
-        mode: "no-cors", 
-        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
             acao: "sincronizar",
             dados: { clientes, ferramentas, locacoes, contratos }
         })
-    }).catch(err => console.log("Erro ao enviar para o Google Sheets", err));
+    }).then(() => {
+        console.log("Enviado para o Google Sheets!");
+    }).catch(err => {
+        console.log("Erro ao enviar para o Google Sheets", err);
+    });
 }
 
 function carregarDadosDaNuvem() {
     fetch(API_URL)
     .then(res => res.json())
     .then(dadosDB => {
-        // Atualiza os dados locais com os da nuvem se houver dados
         if(dadosDB.clientes && dadosDB.clientes.length > 0) clientes = dadosDB.clientes;
         if(dadosDB.ferramentas && dadosDB.ferramentas.length > 0) ferramentas = dadosDB.ferramentas;
         if(dadosDB.locacoes && dadosDB.locacoes.length > 0) locacoes = dadosDB.locacoes;
         if(dadosDB.contratos && dadosDB.contratos.length > 0) contratos = dadosDB.contratos;
         
-        // Regrava no localStorage para manter atualizado localmente
         localStorage.setItem("loc_clientes",JSON.stringify(clientes));
         localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
         localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
         localStorage.setItem("loc_contratos",JSON.stringify(contratos));
         
-        atualizarTudo(); // Atualiza a tela com os novos dados
-        console.log("Sincronizado com a nuvem com sucesso!");
+        atualizarTudo();
+        mostrarToast("Sincronizado com a nuvem! ☁️");
     })
-    .catch(err => console.log("Carregando offline ou primeiro acesso.", err));
+    .catch(err => {
+        console.log("Modo offline ativo.", err);
+    });
 }
 
 
@@ -2753,8 +2756,8 @@ document.getElementById("modalOverlay").addEventListener("click",function(e){
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded",()=>{
-    atualizarTudo(); // Carrega da memória local primeiro (muito rápido)
-    carregarDadosDaNuvem(); // Puxa as atualizações do Google Sheets em segundo plano
+    atualizarTudo(); 
+    carregarDadosDaNuvem(); 
 });
 
 </script>
