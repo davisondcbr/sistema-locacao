@@ -1460,10 +1460,10 @@ if(!config.termo){
 
 
 /* =====================================================
-   UTILIDADES E BANCO DE DADOS (GOOGLE SHEETS)
+   UTILIDADES E BANCO DE DADOS (NPOINT.IO)
 ===================================================== */
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwg_XlBV72kzFJ9TrCWKcmmnlLx4gYuElGE-Me2uInEe0Qck3MwS6hhVfNTGK3Q9aXcnA/exec";
+const API_URL = "https://api.npoint.io/9a0b51e9b4cad2e77124";
 
 function salvarDados(){
     // 1. Salva localmente para velocidade imediata no ecrã
@@ -1473,19 +1473,21 @@ function salvarDados(){
     localStorage.setItem("loc_contratos",JSON.stringify(contratos));
     localStorage.setItem("loc_config",JSON.stringify(config));
 
-    // 2. Envia para a nuvem de forma compatível
+    // 2. Envia para o npoint.io via PUT
     fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            acao: "sincronizar",
-            dados: { clientes, ferramentas, locacoes, contratos }
+            clientes,
+            ferramentas,
+            locacoes,
+            contratos,
+            config
         })
     }).then(() => {
-        console.log("Enviado para o Google Sheets!");
+        console.log("Sincronizado com o npoint.io!");
     }).catch(err => {
-        console.log("Erro ao enviar para o Google Sheets", err);
+        console.log("Erro ao salvar na nuvem", err);
     });
 }
 
@@ -1497,11 +1499,13 @@ function carregarDadosDaNuvem() {
         if(dadosDB.ferramentas && dadosDB.ferramentas.length > 0) ferramentas = dadosDB.ferramentas;
         if(dadosDB.locacoes && dadosDB.locacoes.length > 0) locacoes = dadosDB.locacoes;
         if(dadosDB.contratos && dadosDB.contratos.length > 0) contratos = dadosDB.contratos;
+        if(dadosDB.config && dadosDB.config.nome) config = dadosDB.config;
         
         localStorage.setItem("loc_clientes",JSON.stringify(clientes));
         localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
         localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
         localStorage.setItem("loc_contratos",JSON.stringify(contratos));
+        localStorage.setItem("loc_config",JSON.stringify(config));
         
         atualizarTudo();
         mostrarToast("Sincronizado com a nuvem! ☁️");
