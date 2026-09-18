@@ -1412,25 +1412,14 @@ textarea{
 ===================================================== */
 
 let clientes = JSON.parse(localStorage.getItem("loc_clientes") || "[]");
-
 let ferramentas = JSON.parse(localStorage.getItem("loc_ferramentas") || "[]");
-
 let locacoes = JSON.parse(localStorage.getItem("loc_locacoes") || "[]");
-
 let contratos = JSON.parse(localStorage.getItem("loc_contratos") || "[]");
-
 let config = JSON.parse(localStorage.getItem("loc_config") || "{}");
 
 let clienteSelecionadoLocacao = null;
-
 let ferramentaEditando = null;
-
 let clienteEditando = null;
-
-
-/* =====================================================
-   CONFIG PADRÃO
-===================================================== */
 
 const termoPadrao = `O LOCATÁRIO declara receber o equipamento em perfeito estado de funcionamento e conservação, comprometendo-se a utilizá-lo corretamente e exclusivamente para a finalidade a que se destina.
 
@@ -1445,38 +1434,34 @@ A caução eventualmente paga será utilizada conforme as condições acordadas 
 As partes declaram estar de acordo com as condições estabelecidas neste contrato.`;
 
 if(!config.nome){
-    config = {
-        nome:"",
-        telefone:"",
-        documento:"",
-        endereco:"",
-        termo:termoPadrao
-    };
+    config = { nome:"", telefone:"", documento:"", endereco:"", termo:termoPadrao };
 }
-
 if(!config.termo){
     config.termo = termoPadrao;
 }
 
-
 /* =====================================================
-   UTILIDADES E BANCO DE DADOS (NPOINT.IO)
+   BANCO DE DADOS - JSONBIN.IO (COM MASTER KEY)
 ===================================================== */
-
-const API_URL = "https://api.npoint.io/9a0b51e9b4cad2e77124";
+const BIN_ID = "6aadca2bac6210605ade2bac";
+const MASTER_KEY = "$2a$10$M9gQSUIKghpH1FLZ0Y6W6uvOShBm5wduuGhn5R/U7BvCsnHkbPp4q";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 function salvarDados(){
-    // 1. Salva localmente para velocidade imediata no ecrã
+    // 1. Salva localmente para resposta instantânea
     localStorage.setItem("loc_clientes",JSON.stringify(clientes));
     localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
     localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
     localStorage.setItem("loc_contratos",JSON.stringify(contratos));
     localStorage.setItem("loc_config",JSON.stringify(config));
 
-    // 2. Envia para o npoint.io via PUT
-    fetch(API_URL, {
+    // 2. Envia para o JSONBin.io via PUT com autenticação
+    fetch(JSONBIN_URL, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": MASTER_KEY
+        },
         body: JSON.stringify({
             clientes,
             ferramentas,
@@ -1484,21 +1469,32 @@ function salvarDados(){
             contratos,
             config
         })
-    }).then(() => {
-        console.log("Sincronizado com o npoint.io!");
+    }).then(res => {
+        if(res.ok) {
+            mostrarToast("Sincronizado com o JSONBin! ☁️");
+        } else {
+            console.log("Erro ao salvar no JSONBin, status:", res.status);
+        }
     }).catch(err => {
-        console.log("Erro ao salvar na nuvem", err);
+        console.log("Modo offline ativo", err);
     });
 }
 
 function carregarDadosDaNuvem() {
-    fetch(API_URL)
+    fetch(JSONBIN_URL + "/latest", {
+        method: "GET",
+        headers: {
+            "X-Master-Key": MASTER_KEY
+        }
+    })
     .then(res => res.json())
-    .then(dadosDB => {
-        if(dadosDB.clientes && dadosDB.clientes.length > 0) clientes = dadosDB.clientes;
-        if(dadosDB.ferramentas && dadosDB.ferramentas.length > 0) ferramentas = dadosDB.ferramentas;
-        if(dadosDB.locacoes && dadosDB.locacoes.length > 0) locacoes = dadosDB.locacoes;
-        if(dadosDB.contratos && dadosDB.contratos.length > 0) contratos = dadosDB.contratos;
+    .then(resposta => {
+        const dadosDB = resposta.record || resposta;
+        
+        if(dadosDB.clientes && Array.isArray(dadosDB.clientes)) clientes = dadosDB.clientes;
+        if(dadosDB.ferramentas && Array.isArray(dadosDB.ferramentas)) ferramentas = dadosDB.ferramentas;
+        if(dadosDB.locacoes && Array.isArray(dadosDB.locacoes)) locacoes = dadosDB.locacoes;
+        if(dadosDB.contratos && Array.isArray(dadosDB.contratos)) contratos = dadosDB.contratos;
         if(dadosDB.config && dadosDB.config.nome) config = dadosDB.config;
         
         localStorage.setItem("loc_clientes",JSON.stringify(clientes));
@@ -1508,10 +1504,9 @@ function carregarDadosDaNuvem() {
         localStorage.setItem("loc_config",JSON.stringify(config));
         
         atualizarTudo();
-        mostrarToast("Sincronizado com a nuvem! ☁️");
     })
     .catch(err => {
-        console.log("Modo offline ativo.", err);
+        console.log("Usando dados locais salvos anteriormente.", err);
     });
 }
 
@@ -1701,10 +1696,7 @@ function salvarCliente(){
     if(clienteEditando){
         const index = clientes.findIndex(c=>c.id===clienteEditando);
         if(index >= 0){
-            clientes[index] = {
-                ...clientes[index],
-                ...dados
-            };
+            clientes[index] = { ...clientes[index], ...dados };
         }
     }else{
         clientes.push({
@@ -2756,11 +2748,10 @@ document.getElementById("modalOverlay").addEventListener("click",function(e){
 
 
 /* =====================================================
-   INICIALIZAÇÃO - CHAMA O BANCO DE DADOS NA ABERTURA
+   INICIALIZAÇÃO - CARREGA DA NUVEM NO INÍCIO
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded",()=>{
-    atualizarTudo(); 
     carregarDadosDaNuvem(); 
 });
 
