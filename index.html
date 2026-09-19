@@ -35,6 +35,48 @@ body{
 }
 
 /* =========================
+   PRELOADER (ANIMACAO DE ENTRADA)
+========================= */
+#preloader{
+    position:fixed;
+    inset:0;
+    background:#111827;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index:99999;
+    transition:opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#preloader.fade-out{
+    opacity:0;
+    visibility:hidden;
+}
+
+.spinner{
+    width:55px;
+    height:55px;
+    border:4px solid rgba(255,255,255,0.1);
+    border-top:4px solid #2563eb;
+    border-radius:50%;
+    animation:girar 0.8s linear infinite;
+    margin-bottom:15px;
+}
+
+.preloader-text{
+    color:#fff;
+    font-size:16px;
+    font-weight:600;
+    letter-spacing:1px;
+}
+
+@keyframes girar{
+    0%{ transform:rotate(0deg); }
+    100%{ transform:rotate(360deg); }
+}
+
+/* =========================
    LAYOUT
 ========================= */
 
@@ -800,6 +842,12 @@ textarea{
 
 <body>
 
+<!-- PRELOADER -->
+<div id="preloader">
+    <div class="spinner"></div>
+    <div class="preloader-text">Carregando LocaçãoPro...</div>
+</div>
+
 <div class="app">
 
 <!-- =========================
@@ -1448,14 +1496,12 @@ const MASTER_KEY = "$2a$10$M9gQSUIKghpH1FLZ0Y6W6uvOShBm5wduuGhn5R/U7BvCsnHkbPp4q
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 function salvarDados(){
-    // 1. Salva localmente para resposta instantânea
     localStorage.setItem("loc_clientes",JSON.stringify(clientes));
     localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
     localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
     localStorage.setItem("loc_contratos",JSON.stringify(contratos));
     localStorage.setItem("loc_config",JSON.stringify(config));
 
-    // 2. Envia para o JSONBin.io via PUT com autenticação
     fetch(JSONBIN_URL, {
         method: "PUT",
         headers: {
@@ -1504,10 +1550,23 @@ function carregarDadosDaNuvem() {
         localStorage.setItem("loc_config",JSON.stringify(config));
         
         atualizarTudo();
+        esconderPreloader();
     })
     .catch(err => {
         console.log("Usando dados locais salvos anteriormente.", err);
+        atualizarTudo();
+        esconderPreloader();
     });
+}
+
+function esconderPreloader(){
+    const preloader = document.getElementById("preloader");
+    if(preloader){
+        preloader.classList.add("fade-out");
+        setTimeout(() => {
+            preloader.style.display = "none";
+        }, 500);
+    }
 }
 
 
