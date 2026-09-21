@@ -34,6 +34,80 @@ body{
     color:#111827;
 }
 
+/* TELA DE ACESSO: não altera o banco de dados nem os cadastros existentes. */
+body.acesso-bloqueado .app,
+body.acesso-bloqueado #preloader{
+    display:none;
+}
+
+.tela-acesso{
+    display:none;
+}
+
+body.acesso-bloqueado .tela-acesso{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:#111827;
+    z-index:100000;
+}
+
+.caixa-acesso{
+    width:100%;
+    max-width:390px;
+    padding:32px;
+    border-radius:16px;
+    background:white;
+    box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+
+.caixa-acesso h1{
+    font-size:24px;
+    margin-bottom:8px;
+}
+
+.caixa-acesso p{
+    color:#6b7280;
+    margin-bottom:24px;
+    line-height:1.5;
+}
+
+.caixa-acesso label{
+    display:block;
+    font-weight:600;
+    margin-bottom:8px;
+}
+
+.caixa-acesso input{
+    width:100%;
+    padding:13px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    font:inherit;
+    margin-bottom:14px;
+}
+
+.caixa-acesso button{
+    width:100%;
+    padding:13px;
+    border:0;
+    border-radius:8px;
+    color:white;
+    background:#2563eb;
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.erro-acesso{
+    color:#dc2626!important;
+    margin:0 0 14px!important;
+    font-size:14px;
+}
+
 /* =========================
    PRELOADER (ANIMACAO DE ENTRADA)
 ========================= */
@@ -840,7 +914,19 @@ textarea{
 </style>
 </head>
 
-<body>
+<body class="acesso-bloqueado">
+
+<!-- ACESSO AO SISTEMA: o código é configurado na constante CODIGO_DE_ACESSO abaixo. -->
+<div class="tela-acesso" id="telaAcesso">
+    <form class="caixa-acesso" onsubmit="entrarNoSistema(event)">
+        <h1>🔧 LocaçãoPro</h1>
+        <p>Digite o código de acesso para abrir o sistema.</p>
+        <label for="codigoAcesso">Código de acesso</label>
+        <input id="codigoAcesso" type="password" autocomplete="off" required>
+        <p id="erroAcesso" class="erro-acesso" role="alert" hidden>Código de acesso incorreto.</p>
+        <button type="submit">Entrar</button>
+    </form>
+</div>
 
 <!-- PRELOADER -->
 <div id="preloader">
@@ -1454,6 +1540,26 @@ textarea{
 
 
 <script>
+
+/* ALTERE SOMENTE O TEXTO ENTRE ASPAS PARA TROCAR O CÓDIGO DE ACESSO. */
+const CODIGO_DE_ACESSO = "casaamaral";
+
+function entrarNoSistema(event){
+    event.preventDefault();
+    const campo = document.getElementById("codigoAcesso");
+    const erro = document.getElementById("erroAcesso");
+    if(campo.value !== CODIGO_DE_ACESSO){
+        erro.hidden = false;
+        campo.value = "";
+        campo.focus();
+        return;
+    }
+
+    campo.value = "";
+    erro.hidden = true;
+    document.body.classList.remove("acesso-bloqueado");
+    carregarDadosDaNuvem();
+}
 
 /* =====================================================
    BANCO LOCAL E VARIÁVEIS GERAIS
@@ -2811,7 +2917,7 @@ document.getElementById("modalOverlay").addEventListener("click",function(e){
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded",()=>{
-    carregarDadosDaNuvem(); 
+    document.getElementById("codigoAcesso").focus();
 });
 
 </script>
