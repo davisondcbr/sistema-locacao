@@ -120,7 +120,7 @@ body.acesso-bloqueado .tela-acesso{
     align-items:center;
     justify-content:center;
     z-index:99999;
-    transition:opacity 0.5s ease, visibility 0.5s ease;
+    transition:opacity 0.12s ease, visibility 0.12s ease;
 }
 
 #preloader.fade-out{
@@ -238,6 +238,10 @@ body.acesso-bloqueado .tela-acesso{
 .topbar h2{
     font-size:21px;
 }
+
+.sync-controles{display:flex;align-items:center;gap:10px;}
+.sync-botao{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:8px 11px;cursor:pointer;font-weight:600;}
+.sync-botao:hover{background:#dbeafe;}
 
 .mobile-menu{
     display:none;
@@ -1000,6 +1004,10 @@ textarea{
         font-size:17px;
     }
 
+    .sync-controles{gap:5px;}
+    .sync-botao{padding:7px;}
+    .sync-botao span{display:none;}
+
     .content{
         padding:15px;
     }
@@ -1146,9 +1154,13 @@ textarea{
         <h2 id="tituloPagina">Dashboard</h2>
     </div>
 
-    <div style="text-align:right;font-size:13px;">
-        <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
-        <small id="estadoSincronizacao" role="status" style="color:#6b7280;">Aguardando acesso</small>
+    <div class="sync-controles">
+        <button type="button" class="sync-botao" onclick="atualizarDaNuvem(true)" title="Buscar dados do JSONBin agora" aria-label="Atualizar dados agora">⟳ <span>Atualizar</span></button>
+        <button type="button" id="resolverConflitoBotao" class="sync-botao" onclick="abrirResolucaoConflito()" style="display:none;color:#b91c1c;border-color:#fecaca;" title="Resolver alterações diferentes entre dispositivos">⚠ <span>Resolver</span></button>
+        <div style="text-align:right;font-size:13px;">
+            <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
+            <small id="estadoSincronizacao" role="status" style="color:#6b7280;">Aguardando acesso</small>
+        </div>
     </div>
 
 </header>
@@ -1735,6 +1747,10 @@ function entrarNoSistema(event){
     campo.value = "";
     erro.hidden = true;
     document.body.classList.remove("acesso-bloqueado");
+    acessoLiberado = true;
+    esconderPreloader();
+    atualizarTudo();
+    iniciarAtualizacaoAutomatica();
     carregarDadosDaNuvem();
 }
 
@@ -1779,18 +1795,30 @@ const BIN_ID = "6aadca2bac6210605ade2bac";
 const MASTER_KEY = "$2a$10$M9gQSUIKghpH1FLZ0Y6W6uvOShBm5wduuGhn5R/U7BvCsnHkbPp4q";
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-let filaSalvamento = Promise.resolve();
+let filaSalvamento = null;
+let atualizacaoEmAndamento = null;
 let versaoLocal = 0;
-let bancoCarregado = false;
+let acessoLiberado = false;
+let atualizacaoAutomaticaIniciada = false;
+let ultimoAcessoNuvem = 0;
+let ultimaInteracao = Date.now();
+let temporizadorTentativa = null;
+let atrasoTentativa = 15000;
+let conflitoPendente = localStorage.getItem("loc_sync_conflict")==="1";
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
 const VERSAO_BANCO = 2;
+const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
+const AUSENTE = Symbol("campo ausente");
 
 function estadoSincronizacao(mensagem, erro=false){
     const campo=document.getElementById("estadoSincronizacao");
     if(campo){
         campo.textContent=mensagem;
+        campo.title=mensagem;
         campo.style.color=erro ? "#b91c1c" : "#6b7280";
     }
+    const resolver=document.getElementById("resolverConflitoBotao");
+    if(resolver) resolver.style.display=conflitoPendente ? "inline-block" : "none";
 }
 
 function dadosAtuais(){
@@ -1807,12 +1835,10 @@ function gravarDadosLocais(dados){
 function validarBanco(dados){
     if(!dados || typeof dados!=="object" || Array.isArray(dados) ||
        !dados.config || typeof dados.config!=="object" || Array.isArray(dados.config)){
-        throw new Error("O banco não possui a estrutura esperada. Nenhum dado foi sobrescrito.");
+        throw new Error("O banco não tem a estrutura esperada. Nenhum dado foi sobrescrito.");
     }
     for(const campo of CAMPOS_BANCO){
-        if(!Array.isArray(dados[campo])){
-            throw new Error(`A lista ${campo} não existe no banco. Nenhum dado foi sobrescrito.`);
-        }
+        if(!Array.isArray(dados[campo])) throw new Error(`A lista ${campo} não existe no banco.`);
         const ids=new Set();
         for(const item of dados[campo]){
             if(!item || typeof item!=="object" || !item.id || ids.has(String(item.id))){
@@ -1822,12 +1848,13 @@ function validarBanco(dados){
         }
     }
     if(Number(dados.schemaVersion || 0)>VERSAO_BANCO){
-        throw new Error("O banco está em uma versão mais recente do que este index.");
+        throw new Error("Este index precisa ser atualizado para ler a versão atual do banco.");
     }
     return dados;
 }
 
 function assinaturaBanco(valor){
+    if(valor===AUSENTE) return "<ausente>";
     if(Array.isArray(valor)) return `[${valor.map(assinaturaBanco).join(",")}]`;
     if(valor && typeof valor==="object"){
         return `{${Object.keys(valor).sort().map(chave=>
@@ -1836,85 +1863,146 @@ function assinaturaBanco(valor){
     return JSON.stringify(valor);
 }
 
+function iguaisBanco(a,b){
+    return assinaturaBanco(a)===assinaturaBanco(b);
+}
+
 function baseSincronizada(){
     try{
         const texto=localStorage.getItem("loc_cloud_base");
         return texto ? validarBanco(JSON.parse(texto)) : null;
     }catch(erro){
-        console.error("Não foi possível ler a base de sincronização.",erro);
+        console.error("Base de sincronização indisponível.",erro);
         return null;
     }
 }
 
+function descreverErro(erro){
+    const codigo=erro?.status;
+    if(codigo && erro.detalhe) return `JSONBin HTTP ${codigo}: ${erro.detalhe}`;
+    if(codigo===401 || codigo===403) return `JSONBin HTTP ${codigo}: chave sem acesso a este banco.`;
+    if(codigo===404) return "JSONBin HTTP 404: confirme o ID do banco no index.";
+    if(codigo===402 || codigo===429) return `JSONBin HTTP ${codigo}: confira o limite de requisições da conta.`;
+    if(codigo===413) return "JSONBin HTTP 413: o banco excedeu o tamanho permitido.";
+    if(codigo) return `JSONBin HTTP ${codigo}: não foi possível sincronizar.`;
+    if(erro?.conflito) return erro.message;
+    if(erro instanceof TypeError) return "Falha de conexão com o JSONBin. Confira a internet e o navegador.";
+    return erro?.message || "Não foi possível sincronizar com o JSONBin.";
+}
+
+async function erroHttp(resposta){
+    const erro=new Error(`JSONBin HTTP ${resposta.status}`);
+    erro.status=resposta.status;
+    try{
+        const dados=await resposta.json();
+        const detalhe=dados?.message || dados?.error || dados?.detail;
+        if(typeof detalhe==="string"){
+            erro.detalhe=detalhe.replaceAll(MASTER_KEY,"[chave]").replaceAll(BIN_ID,"[id]").slice(0,150);
+        }
+    }catch(_erro){/* Algumas respostas de erro não contêm JSON. */}
+    return erro;
+}
+
 async function lerBancoDaNuvem(){
+    ultimoAcessoNuvem=Date.now();
     const resposta=await fetch(JSONBIN_URL+"/latest",{
         method:"GET",
-        headers:{"X-Master-Key":MASTER_KEY}
+        headers:{"X-Master-Key":MASTER_KEY},
+        cache:"no-store"
     });
-    if(!resposta.ok) throw new Error(`JSONBin respondeu HTTP ${resposta.status}`);
+    if(!resposta.ok) throw await erroHttp(resposta);
     const conteudo=await resposta.json();
     return validarBanco(conteudo?.record ?? conteudo);
 }
 
-function conferirVersaoRemota(local,remoto,base){
-    if(base){
-        if(assinaturaBanco(base)!==assinaturaBanco(remoto)){
-            throw new Error("O banco mudou em outro lugar. Dados locais mantidos; confira antes de sincronizar.");
+function conflito(caminho){
+    const erro=new Error(`Alterações diferentes em ${caminho}. Exporte o backup antes de resolver.`);
+    erro.conflito=true;
+    throw erro;
+}
+
+function mesclarValor(base,local,remoto,caminho,priorizarLocal=false){
+    if(iguaisBanco(local,remoto)) return local;
+    if(iguaisBanco(local,base)) return remoto;
+    if(iguaisBanco(remoto,base)) return local;
+    if(base!==AUSENTE && local!==AUSENTE && remoto!==AUSENTE &&
+       !Array.isArray(base) && !Array.isArray(local) && !Array.isArray(remoto) &&
+       typeof base==="object" && typeof local==="object" && typeof remoto==="object" &&
+       base && local && remoto){
+        const resultado={};
+        const chaves=new Set([...Object.keys(remoto),...Object.keys(local),...Object.keys(base)]);
+        for(const chave of chaves){
+            const valor=mesclarValor(
+                Object.prototype.hasOwnProperty.call(base,chave) ? base[chave] : AUSENTE,
+                Object.prototype.hasOwnProperty.call(local,chave) ? local[chave] : AUSENTE,
+                Object.prototype.hasOwnProperty.call(remoto,chave) ? remoto[chave] : AUSENTE,
+                `${caminho}.${chave}`,priorizarLocal
+            );
+            if(valor!==AUSENTE) resultado[chave]=valor;
         }
-        return;
+        return resultado;
     }
-    // Para uma pendência antiga sem base salva, só é seguro enviar novos registros.
+    return priorizarLocal ? local : conflito(caminho);
+}
+
+function mesclarColecao(base,local,remoto,campo,priorizarLocal=false){
+    const indice=lista=>new Map(lista.map(item=>[String(item.id),item]));
+    const anteriores=indice(base), locais=indice(local), nuvem=indice(remoto);
+    const ids=new Set([...nuvem.keys(),...locais.keys(),...anteriores.keys()]);
+    const resultado=[];
+    for(const id of ids){
+        const item=mesclarValor(
+            anteriores.has(id) ? anteriores.get(id) : AUSENTE,
+            locais.has(id) ? locais.get(id) : AUSENTE,
+            nuvem.has(id) ? nuvem.get(id) : AUSENTE,
+            `${campo} (registro ${id})`,priorizarLocal
+        );
+        if(item!==AUSENTE) resultado.push(item);
+    }
+    return resultado;
+}
+
+function conferirPendenciaAntiga(local,remoto){
+    // Pendências de uma versão anterior sem base: só enviar se os dados antigos coincidirem.
     for(const campo of CAMPOS_BANCO){
-        const registrosLocais=new Map(local[campo].map(item=>[String(item.id),item]));
+        const indice=new Map(local[campo].map(item=>[String(item.id),item]));
         for(const item of remoto[campo]){
-            const anterior=registrosLocais.get(String(item.id));
-            if(!anterior || assinaturaBanco(anterior)!==assinaturaBanco(item)){
-                throw new Error("Há registros diferentes na nuvem. Dados locais mantidos; confira antes de sincronizar.");
+            if(!iguaisBanco(indice.get(String(item.id)) ?? AUSENTE,item)){
+                conflito(`${campo}: cópia local sem histórico de sincronização`);
             }
         }
     }
-    if(assinaturaBanco(local.config)!==assinaturaBanco(remoto.config)){
-        throw new Error("As configurações mudaram na nuvem. Dados locais mantidos.");
-    }
+    if(!iguaisBanco(local.config,remoto.config)) conflito("configurações antigas");
 }
 
-function salvarDados(){
-    const local=dadosAtuais();
-    gravarDadosLocais(local);
-    localStorage.setItem("loc_sync_pending","1");
-    estadoSincronizacao("Sincronização pendente");
-    if(!bancoCarregado) return Promise.resolve();
+function mesclarBanco(base,local,remoto,priorizarLocal=false){
+    if(!base && !priorizarLocal) conferirPendenciaAntiga(local,remoto);
+    // Sem base anterior, a resolução manual mantém os registros exclusivos da nuvem.
+    const anterior=base || (priorizarLocal ? {
+        ...remoto,
+        ...Object.fromEntries(CAMPOS_BANCO.map(campo=>[campo,remoto[campo].filter(item=>
+            local[campo].some(outro=>outro.id===item.id && iguaisBanco(outro,item)))]))
+    } : remoto);
+    const resultado={...remoto,schemaVersion:VERSAO_BANCO};
+    for(const campo of CAMPOS_BANCO){
+        resultado[campo]=mesclarColecao(anterior[campo],local[campo],remoto[campo],campo,priorizarLocal);
+    }
+    resultado.config=mesclarValor(anterior.config,local.config,remoto.config,"configurações",priorizarLocal);
+    return validarBanco(resultado);
+}
 
-    const versao=++versaoLocal;
-    filaSalvamento=filaSalvamento.catch(()=>{}).then(async()=>{
-        // Sempre conferir o registro remoto antes do PUT, inclusive após quedas de conexão.
-        const remoto=await lerBancoDaNuvem();
-        conferirVersaoRemota(local,remoto,baseSincronizada());
-        const proximo={...remoto,...local,schemaVersion:VERSAO_BANCO};
-        const resposta=await fetch(JSONBIN_URL,{
-            method:"PUT",
-            headers:{
-                "Content-Type":"application/json",
-                "X-Master-Key":MASTER_KEY,
-                "X-Bin-Versioning":"true"
-            },
-            body:JSON.stringify(proximo)
-        });
-        if(!resposta.ok) throw new Error(`JSONBin respondeu HTTP ${resposta.status}`);
-        localStorage.setItem("loc_cloud_base",JSON.stringify(proximo));
-        if(versao===versaoLocal){
-            localStorage.removeItem("loc_sync_pending");
-            estadoSincronizacao("Sincronizado com o JSONBin");
-            mostrarToast("Dados sincronizados com o JSONBin.");
-        }
-    }).catch(erro=>{
-        console.error("Dados locais preservados; sincronização pendente.",erro);
-        if(versao===versaoLocal){
-            estadoSincronizacao("Pendente: confira a conexão ou os dados",true);
-            mostrarToast(erro.message || "Dados locais preservados; sincronização pendente.");
-        }
+function aplicarBanco(dados){
+    const mudou=!iguaisBanco(dadosAtuais(),{
+        clientes:dados.clientes,ferramentas:dados.ferramentas,
+        locacoes:dados.locacoes,contratos:dados.contratos,config:dados.config
     });
-    return filaSalvamento;
+    clientes=dados.clientes;
+    ferramentas=dados.ferramentas;
+    locacoes=dados.locacoes;
+    contratos=dados.contratos;
+    config=dados.config;
+    gravarDadosLocais(dados);
+    if(mudou) atualizarTudo();
 }
 
 function corrigirDisponibilidade(){
@@ -1930,39 +2018,184 @@ function corrigirDisponibilidade(){
     return corrigiu;
 }
 
-async function carregarDadosDaNuvem(){
-    estadoSincronizacao("Carregando banco de dados...");
+function agendarNovaTentativa(){
+    if(temporizadorTentativa || !acessoLiberado || conflitoPendente) return;
+    temporizadorTentativa=setTimeout(()=>{
+        temporizadorTentativa=null;
+        if(localStorage.getItem("loc_sync_pending")==="1") sincronizarPendencias();
+    },atrasoTentativa);
+    atrasoTentativa=Math.min(atrasoTentativa*2,120000);
+}
+
+function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
+    if(!acessoLiberado || localStorage.getItem("loc_sync_pending")!=="1") return Promise.resolve(false);
+    if(conflitoPendente && !priorizarLocal){
+        estadoSincronizacao("Conflito entre dispositivos: clique em Resolver.",true);
+        return Promise.resolve(false);
+    }
+    if(filaSalvamento) return filaSalvamento;
+    estadoSincronizacao("Enviando alterações...");
+    filaSalvamento=(async()=>{
+        while(localStorage.getItem("loc_sync_pending")==="1"){
+            const local=dadosAtuais();
+            const versao=versaoLocal;
+            const remoto=remotoJaLido || await lerBancoDaNuvem();
+            remotoJaLido=null;
+            const proximo=mesclarBanco(baseSincronizada(),local,remoto,priorizarLocal);
+            priorizarLocal=false;
+            if(!iguaisBanco(proximo,remoto)){
+                // Versionamento é opcional no JSONBin; usar os cabeçalhos mínimos permite o plano gratuito.
+                const resposta=await fetch(JSONBIN_URL,{
+                    method:"PUT",
+                    headers:{"Content-Type":"application/json","X-Master-Key":MASTER_KEY},
+                    body:JSON.stringify(proximo)
+                });
+                if(!resposta.ok) throw await erroHttp(resposta);
+            }
+            localStorage.setItem("loc_cloud_base",JSON.stringify(proximo));
+            // Inclui edições feitas enquanto a gravação estava em andamento.
+            const dadosFinais=versao===versaoLocal ? proximo : mesclarBanco(local,dadosAtuais(),proximo);
+            aplicarBanco(dadosFinais);
+            if(versao===versaoLocal){
+                localStorage.removeItem("loc_sync_pending");
+                atrasoTentativa=15000;
+                conflitoPendente=false;
+                localStorage.removeItem("loc_sync_conflict");
+                estadoSincronizacao(`Sincronizado às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`);
+                return true;
+            }
+            gravarDadosLocais(dadosFinais);
+        }
+        return true;
+    })().catch(erro=>{
+        console.error("Falha na sincronização; dados locais preservados.",erro);
+        const mensagem=descreverErro(erro);
+        estadoSincronizacao(mensagem,true);
+        conflitoPendente=Boolean(erro.conflito);
+        if(conflitoPendente) localStorage.setItem("loc_sync_conflict","1");
+        estadoSincronizacao(mensagem,true);
+        mostrarToast(mensagem);
+        if(!conflitoPendente && ![400,401,402,403,404,413,422].includes(erro.status)) agendarNovaTentativa();
+        return false;
+    }).finally(()=>{filaSalvamento=null;});
+    return filaSalvamento;
+}
+
+function salvarDados(){
+    gravarDadosLocais(dadosAtuais());
+    localStorage.setItem("loc_sync_pending","1");
+    versaoLocal++;
+    estadoSincronizacao(conflitoPendente ? "Conflito: faça backup e clique em Resolver." : "Alterações salvas; enviando...",conflitoPendente);
+    return sincronizarPendencias();
+}
+
+function abrirResolucaoConflito(){
+    abrirModal("Alterações em dois dispositivos",`
+        <p class="info-box">Algum dado foi alterado de formas diferentes no computador e em outro dispositivo. As duas cópias serão baixadas antes de você escolher qual alteração manter. As demais alterações serão combinadas.</p>
+        <div class="form-actions">
+            <button class="btn btn-secondary" type="button" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" type="button" onclick="resolverConflito()">Baixar cópias e manter minhas alterações</button>
+        </div>
+    `);
+}
+
+async function resolverConflito(){
+    if(!conflitoPendente || localStorage.getItem("loc_sync_pending")!=="1") return;
     try{
         const remoto=await lerBancoDaNuvem();
-        bancoCarregado=true;
-        if(localStorage.getItem("loc_sync_pending")==="1"){
-            // A edição feita sem conexão continua disponível, mas só será enviada se segura.
-            atualizarTudo();
-            await salvarDados();
-            return;
-        }
-        clientes=remoto.clientes;
-        ferramentas=remoto.ferramentas;
-        locacoes=remoto.locacoes;
-        contratos=remoto.contratos;
-        config=remoto.config;
-        localStorage.setItem("loc_cloud_base",JSON.stringify(remoto));
-        const estoqueCorrigido=corrigirDisponibilidade();
-        gravarDadosLocais(dadosAtuais());
-        atualizarTudo();
-        estadoSincronizacao("Sincronizado com o JSONBin");
-        if(estoqueCorrigido || Number(remoto.schemaVersion || 0)<VERSAO_BANCO){
-            await salvarDados();
-        }
+        const copia={
+            aviso:"Cópia de segurança antes de resolver alterações entre dispositivos.",
+            dadosDesteDispositivo:dadosAtuais(),
+            dadosDaNuvem:remoto,
+            baseAnterior:baseSincronizada()
+        };
+        const blob=new Blob([JSON.stringify(copia,null,2)],{type:"application/json"});
+        const link=document.createElement("a");
+        link.href=URL.createObjectURL(blob);
+        link.download=`backup-conflito-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+        if(!confirm("Confirme que o backup foi baixado. Deseja manter as alterações deste dispositivo nos campos em conflito?")) return;
+        conflitoPendente=false;
+        localStorage.removeItem("loc_sync_conflict");
+        fecharModal();
+        await sincronizarPendencias(true,remoto);
     }catch(erro){
-        bancoCarregado=true;
-        console.error("Dados locais preservados; não foi possível carregar o banco.",erro);
-        estadoSincronizacao("Usando dados locais; nuvem indisponível",true);
-        atualizarTudo();
-        mostrarToast("Sem acesso ao banco. Dados locais preservados.");
-    }finally{
-        esconderPreloader();
+        const mensagem=descreverErro(erro);
+        estadoSincronizacao(mensagem,true);
+        mostrarToast(mensagem);
     }
+}
+
+async function atualizarDaNuvem(manual=false){
+    if(!acessoLiberado) return false;
+    if(filaSalvamento) return filaSalvamento;
+    if(localStorage.getItem("loc_sync_pending")==="1") return sincronizarPendencias();
+    if(atualizacaoEmAndamento) return atualizacaoEmAndamento;
+    estadoSincronizacao("Buscando atualizações...");
+    const versao=versaoLocal;
+    atualizacaoEmAndamento=(async()=>{
+        try{
+            const remoto=await lerBancoDaNuvem();
+            if(versao!==versaoLocal || localStorage.getItem("loc_sync_pending")==="1"){
+                return sincronizarPendencias();
+            }
+            localStorage.setItem("loc_cloud_base",JSON.stringify(remoto));
+            const mudou=!iguaisBanco(dadosAtuais(),{
+                clientes:remoto.clientes,ferramentas:remoto.ferramentas,
+                locacoes:remoto.locacoes,contratos:remoto.contratos,config:remoto.config
+            });
+            aplicarBanco(remoto);
+            estadoSincronizacao(`Sincronizado às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`);
+            const corrigiu=corrigirDisponibilidade();
+            if(corrigiu || Number(remoto.schemaVersion || 0)<VERSAO_BANCO){
+                salvarDados(); // Migração em segundo plano, sem atrasar a abertura da tela.
+            }else if(mudou && manual){
+                mostrarToast("Dados atualizados com o JSONBin.");
+            }
+            return true;
+        }catch(erro){
+            console.error("Falha ao buscar atualizações do JSONBin.",erro);
+            const mensagem=descreverErro(erro);
+            estadoSincronizacao(mensagem,true);
+            mostrarToast(mensagem);
+            return false;
+        }finally{
+            atualizacaoEmAndamento=null;
+        }
+    })();
+    return atualizacaoEmAndamento;
+}
+
+function carregarDadosDaNuvem(){
+    return atualizarDaNuvem(true);
+}
+
+function iniciarAtualizacaoAutomatica(){
+    if(atualizacaoAutomaticaIniciada) return;
+    atualizacaoAutomaticaIniciada=true;
+    // Polling contido para não consumir rapidamente o limite de requisições do JSONBin.
+    setInterval(()=>{
+        if(document.visibilityState==="hidden") return;
+        if(Date.now()-ultimaInteracao>5*60000) return;
+        if(Date.now()-ultimoAcessoNuvem>=INTERVALO_ATUALIZACAO) atualizarDaNuvem();
+    },INTERVALO_ATUALIZACAO);
+    const registrarInteracao=()=>{
+        const estavaInativo=Date.now()-ultimaInteracao>5*60000;
+        ultimaInteracao=Date.now();
+        if(estavaInativo && Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
+    };
+    document.addEventListener("pointerdown",registrarInteracao);
+    document.addEventListener("keydown",registrarInteracao);
+    document.addEventListener("visibilitychange",()=>{
+        if(document.visibilityState==="visible" && Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
+    });
+    window.addEventListener("focus",()=>{
+        if(Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
+    });
+    window.addEventListener("online",()=>atualizarDaNuvem());
 }
 
 function baixarBackupDados(){
@@ -1983,7 +2216,7 @@ function esconderPreloader(){
         preloader.classList.add("fade-out");
         setTimeout(() => {
             preloader.style.display = "none";
-        }, 500);
+        }, 150);
     }
 }
 
@@ -3562,11 +3795,15 @@ function atualizarDashboard(){
 ===================================================== */
 
 function carregarConfiguracoes(){
-    document.getElementById("configNome").value=config.nome || "";
-    document.getElementById("configTelefone").value=config.telefone || "";
-    document.getElementById("configDocumento").value=config.documento || "";
-    document.getElementById("configEndereco").value=config.endereco || "";
-    document.getElementById("configTermo").value=config.termo || termoPadrao;
+    const editando=document.activeElement?.closest?.("#configuracoes") &&
+        ["INPUT","TEXTAREA"].includes(document.activeElement.tagName);
+    if(!editando){
+        document.getElementById("configNome").value=config.nome || "";
+        document.getElementById("configTelefone").value=config.telefone || "";
+        document.getElementById("configDocumento").value=config.documento || "";
+        document.getElementById("configEndereco").value=config.endereco || "";
+        document.getElementById("configTermo").value=config.termo || termoPadrao;
+    }
     document.getElementById("empresaTopbar").textContent=config.nome || "Sistema de Locação";
 }
 
