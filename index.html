@@ -333,6 +333,150 @@ body.acesso-bloqueado .tela-acesso{
     font-size:22px;
 }
 
+/* PAINEL FINANCEIRO */
+.financeiro-controles{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    gap:12px;
+    padding:18px;
+    margin-bottom:18px;
+    background:white;
+    border:1px solid var(--border);
+    border-radius:13px;
+    box-shadow:var(--shadow);
+}
+
+.financeiro-controles label{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    color:#4b5563;
+    font-size:12px;
+    font-weight:700;
+}
+
+.financeiro-controles input,
+.financeiro-controles select{
+    min-height:40px;
+    padding:8px 10px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    background:white;
+    color:#111827;
+    font-size:14px;
+}
+
+.financeiro-periodo{
+    margin-left:auto;
+    padding:10px 12px;
+    border-radius:8px;
+    background:#eff6ff;
+    color:#1e40af;
+    font-size:13px;
+    font-weight:700;
+}
+
+.financeiro-resumo{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.financeiro-resumo .stat-card strong{
+    font-size:clamp(18px,2vw,27px);
+    word-break:break-word;
+}
+
+.financeiro-graficos,
+.financeiro-ranking{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    margin-bottom:18px;
+}
+
+.financeiro-painel{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:20px;
+    box-shadow:var(--shadow);
+    min-width:0;
+}
+
+.financeiro-painel h3{
+    font-size:16px;
+    margin-bottom:6px;
+}
+
+.financeiro-painel .descricao{
+    color:#6b7280;
+    font-size:12px;
+    line-height:1.5;
+    margin-bottom:16px;
+}
+
+.financeiro-painel svg{
+    width:100%;
+    height:auto;
+    display:block;
+}
+
+.grafico-legenda{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:8px;
+    font-size:12px;
+    color:#4b5563;
+}
+
+.grafico-legenda i{
+    display:inline-block;
+    width:11px;
+    height:11px;
+    border-radius:3px;
+    margin-right:5px;
+}
+
+.ranking-item{
+    margin-bottom:16px;
+}
+
+.ranking-cabecalho{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:13px;
+    margin-bottom:6px;
+}
+
+.ranking-cabecalho span{
+    color:#6b7280;
+    white-space:nowrap;
+}
+
+.ranking-trilho{
+    background:#eef2f7;
+    border-radius:999px;
+    height:8px;
+    overflow:hidden;
+}
+
+.ranking-trilho div{
+    height:100%;
+    border-radius:999px;
+    background:#2563eb;
+}
+
+.financeiro-nota{
+    font-size:12px;
+    color:#6b7280;
+    line-height:1.5;
+    margin:0 0 16px;
+}
+
+.pagamento-extra[hidden]{display:none!important;}
+
 /* =========================
    BUTTONS
 ========================= */
@@ -825,6 +969,8 @@ textarea{
     .form-grid-3{
         grid-template-columns:1fr 1fr;
     }
+    .financeiro-resumo{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .financeiro-graficos,.financeiro-ranking{grid-template-columns:1fr;}
 }
 
 @media(max-width:750px){
@@ -862,6 +1008,8 @@ textarea{
         grid-template-columns:1fr 1fr;
         gap:10px;
     }
+    .financeiro-controles label,.financeiro-controles .btn{flex:1 1 150px;}
+    .financeiro-periodo{margin-left:0;width:100%;}
 
     .card{
         padding:15px;
@@ -998,8 +1146,9 @@ textarea{
         <h2 id="tituloPagina">Dashboard</h2>
     </div>
 
-    <div id="empresaTopbar" style="font-size:13px;color:#6b7280;">
-        Sistema de Locação
+    <div style="text-align:right;font-size:13px;">
+        <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
+        <small id="estadoSincronizacao" role="status" style="color:#6b7280;">Aguardando acesso</small>
     </div>
 
 </header>
@@ -1047,7 +1196,7 @@ textarea{
 
         <div class="card stat-card">
             <div>
-                <small>Faturamento</small>
+                <small>Recebido neste mês</small>
                 <strong id="dashFaturamento">R$ 0,00</strong>
             </div>
             <div class="stat-icon">💰</div>
@@ -1257,6 +1406,7 @@ textarea{
                         <th>Devolução</th>
                         <th>Cobrança</th>
                         <th>Valor</th>
+                        <th>Pagamento</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
@@ -1374,57 +1524,80 @@ textarea{
 
         <div>
             <h1>Financeiro</h1>
-            <p>Resumo financeiro das locações</p>
+            <p>Contratos, recebimentos e histórico com filtro por mês</p>
         </div>
 
     </div>
 
-    <div class="dashboard-grid">
+    <div class="financeiro-controles">
+        <label>Mês da retirada
+            <input id="finMes" type="month" onchange="atualizarFinanceiro()">
+        </label>
+        <button class="btn btn-secondary" onclick="filtrarMesAtual()">Mês atual</button>
+        <button class="btn btn-primary" onclick="mostrarHistoricoCompleto()">Todo o histórico</button>
+        <button class="btn btn-secondary" onclick="exportarFinanceiroCsv()">⬇ CSV das locações</button>
+        <label>Status das locações
+            <select id="finStatus" onchange="atualizarFinanceiro()">
+                <option value="">Todos</option>
+                <option value="Ativa">Ativas</option>
+                <option value="Finalizada">Finalizadas</option>
+            </select>
+        </label>
+        <span class="financeiro-periodo" id="finPeriodoTexto">Mês atual</span>
+    </div>
 
-        <div class="card stat-card">
+    <div class="dashboard-grid financeiro-resumo">
+        <div class="card stat-card"><div><small>Locações no período</small><strong id="finLocacoes">0</strong></div><div class="stat-icon">📦</div></div>
+        <div class="card stat-card"><div><small>Contratado no período</small><strong id="finFaturamento">R$ 0,00</strong></div><div class="stat-icon">🧾</div></div>
+        <div class="card stat-card"><div><small>Recebido no período</small><strong id="finRecebido">R$ 0,00</strong></div><div class="stat-icon">💰</div></div>
+        <div class="card stat-card"><div><small>A receber desses contratos</small><strong id="finPendente">R$ 0,00</strong></div><div class="stat-icon">⏳</div></div>
+        <div class="card stat-card"><div><small>Ativas deste período</small><strong id="finAtivas">0</strong></div><div class="stat-icon">🔧</div></div>
+        <div class="card stat-card"><div><small>Cauções registradas</small><strong id="finCaucoes">R$ 0,00</strong></div><div class="stat-icon">🔐</div></div>
+        <div class="card stat-card"><div><small>Ticket médio contratado</small><strong id="finTicket">R$ 0,00</strong></div><div class="stat-icon">📈</div></div>
+        <div class="card stat-card"><div><small>Pagamento não informado</small><strong id="finSemInfo">0</strong></div><div class="stat-icon">❔</div></div>
+    </div>
 
-            <div>
-                <small>Total de locações</small>
-                <strong id="finLocacoes">0</strong>
-            </div>
+    <p class="financeiro-nota">O período dos contratos considera a data de retirada. O valor recebido considera a data do pagamento, inclusive de contratos de outros meses. Registros antigos sem confirmação de recebimento aparecem como “Não informado”. Cauções são exibidas separadamente. <strong id="finAtivasGerais"></strong></p>
 
-            <div class="stat-icon">📦</div>
-
+    <div class="financeiro-graficos">
+        <div class="financeiro-painel">
+            <h3>Evolução mensal</h3>
+            <p class="descricao">Contratos iniciados e pagamentos recebidos em cada mês.</p>
+            <div id="finGraficoMensal"></div>
+            <div class="grafico-legenda"><span><i style="background:#2563eb"></i>Contratado</span><span><i style="background:#16a34a"></i>Recebido</span></div>
         </div>
-
-        <div class="card stat-card">
-
-            <div>
-                <small>Faturamento</small>
-                <strong id="finFaturamento">R$ 0,00</strong>
-            </div>
-
-            <div class="stat-icon">💰</div>
-
+        <div class="financeiro-painel">
+            <h3>Situação das locações</h3>
+            <p class="descricao">Distribuição dos contratos do período selecionado.</p>
+            <div id="finGraficoStatus"></div>
         </div>
+    </div>
 
-        <div class="card stat-card">
+    <div class="financeiro-ranking">
+        <div class="financeiro-painel"><h3>Clientes que mais locaram</h3><p class="descricao">Quantidade de contratos no período.</p><div id="finTopClientes"></div></div>
+        <div class="financeiro-painel"><h3>Ferramentas mais locadas</h3><p class="descricao">Quantidade de contratos no período.</p><div id="finTopFerramentas"></div></div>
+    </div>
 
-            <div>
-                <small>Cauções</small>
-                <strong id="finCaucoes">R$ 0,00</strong>
-            </div>
-
-            <div class="stat-icon">🔐</div>
-
+    <div class="table-card">
+        <div class="table-header">
+            <h3>Histórico de locações <small id="finQuantidadeHistorico" style="color:#6b7280"></small></h3>
         </div>
-
-        <div class="card stat-card">
-
-            <div>
-                <small>Ticket médio</small>
-                <strong id="finTicket">R$ 0,00</strong>
-            </div>
-
-            <div class="stat-icon">📈</div>
-
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Retirada</th><th>Devolução prevista</th><th>Cliente</th><th>Ferramenta</th><th>Valor contratado</th><th>Recebido</th><th>A receber</th><th>Pagamento</th><th>Situação</th><th>Ação</th></tr></thead>
+                <tbody id="finHistorico"></tbody>
+            </table>
         </div>
+    </div>
 
+    <div class="table-card" style="margin-top:18px;">
+        <div class="table-header"><h3>Recebimentos no período <small id="finQuantidadeRecebimentos" style="color:#6b7280"></small></h3></div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Data do pagamento</th><th>Cliente</th><th>Ferramenta</th><th>Data da retirada</th><th>Forma</th><th>Valor recebido</th><th>Contrato</th></tr></thead>
+                <tbody id="finRecebimentos"></tbody>
+            </table>
+        </div>
     </div>
 
 </section>
@@ -1501,6 +1674,10 @@ textarea{
                 💾 Salvar configurações
             </button>
 
+            <button class="btn btn-secondary" type="button" onclick="baixarBackupDados()">
+                ⬇️ Baixar backup dos dados
+            </button>
+
         </div>
 
     </div>
@@ -1574,6 +1751,7 @@ let config = JSON.parse(localStorage.getItem("loc_config") || "{}");
 let clienteSelecionadoLocacao = null;
 let ferramentaEditando = null;
 let clienteEditando = null;
+let locacaoEditando = null;
 
 const termoPadrao = `O LOCATÁRIO declara receber o equipamento em perfeito estado de funcionamento e conservação, comprometendo-se a utilizá-lo corretamente e exclusivamente para a finalidade a que se destina.
 
@@ -1601,68 +1779,202 @@ const BIN_ID = "6aadca2bac6210605ade2bac";
 const MASTER_KEY = "$2a$10$M9gQSUIKghpH1FLZ0Y6W6uvOShBm5wduuGhn5R/U7BvCsnHkbPp4q";
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-function salvarDados(){
-    localStorage.setItem("loc_clientes",JSON.stringify(clientes));
-    localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
-    localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
-    localStorage.setItem("loc_contratos",JSON.stringify(contratos));
-    localStorage.setItem("loc_config",JSON.stringify(config));
+let filaSalvamento = Promise.resolve();
+let versaoLocal = 0;
+let bancoCarregado = false;
+const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
+const VERSAO_BANCO = 2;
 
-    fetch(JSONBIN_URL, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": MASTER_KEY
-        },
-        body: JSON.stringify({
-            clientes,
-            ferramentas,
-            locacoes,
-            contratos,
-            config
-        })
-    }).then(res => {
-        if(res.ok) {
-            mostrarToast("Sincronizado com o JSONBin! ☁️");
-        } else {
-            console.log("Erro ao salvar no JSONBin, status:", res.status);
-        }
-    }).catch(err => {
-        console.log("Modo offline ativo", err);
-    });
+function estadoSincronizacao(mensagem, erro=false){
+    const campo=document.getElementById("estadoSincronizacao");
+    if(campo){
+        campo.textContent=mensagem;
+        campo.style.color=erro ? "#b91c1c" : "#6b7280";
+    }
 }
 
-function carregarDadosDaNuvem() {
-    fetch(JSONBIN_URL + "/latest", {
-        method: "GET",
-        headers: {
-            "X-Master-Key": MASTER_KEY
+function dadosAtuais(){
+    return JSON.parse(JSON.stringify({clientes,ferramentas,locacoes,contratos,config}));
+}
+
+function gravarDadosLocais(dados){
+    for(const campo of CAMPOS_BANCO){
+        localStorage.setItem(`loc_${campo}`,JSON.stringify(dados[campo]));
+    }
+    localStorage.setItem("loc_config",JSON.stringify(dados.config));
+}
+
+function validarBanco(dados){
+    if(!dados || typeof dados!=="object" || Array.isArray(dados) ||
+       !dados.config || typeof dados.config!=="object" || Array.isArray(dados.config)){
+        throw new Error("O banco não possui a estrutura esperada. Nenhum dado foi sobrescrito.");
+    }
+    for(const campo of CAMPOS_BANCO){
+        if(!Array.isArray(dados[campo])){
+            throw new Error(`A lista ${campo} não existe no banco. Nenhum dado foi sobrescrito.`);
         }
-    })
-    .then(res => res.json())
-    .then(resposta => {
-        const dadosDB = resposta.record || resposta;
-        
-        if(dadosDB.clientes && Array.isArray(dadosDB.clientes)) clientes = dadosDB.clientes;
-        if(dadosDB.ferramentas && Array.isArray(dadosDB.ferramentas)) ferramentas = dadosDB.ferramentas;
-        if(dadosDB.locacoes && Array.isArray(dadosDB.locacoes)) locacoes = dadosDB.locacoes;
-        if(dadosDB.contratos && Array.isArray(dadosDB.contratos)) contratos = dadosDB.contratos;
-        if(dadosDB.config && dadosDB.config.nome) config = dadosDB.config;
-        
-        localStorage.setItem("loc_clientes",JSON.stringify(clientes));
-        localStorage.setItem("loc_ferramentas",JSON.stringify(ferramentas));
-        localStorage.setItem("loc_locacoes",JSON.stringify(locacoes));
-        localStorage.setItem("loc_contratos",JSON.stringify(contratos));
-        localStorage.setItem("loc_config",JSON.stringify(config));
-        
-        atualizarTudo();
-        esconderPreloader();
-    })
-    .catch(err => {
-        console.log("Usando dados locais salvos anteriormente.", err);
-        atualizarTudo();
-        esconderPreloader();
+        const ids=new Set();
+        for(const item of dados[campo]){
+            if(!item || typeof item!=="object" || !item.id || ids.has(String(item.id))){
+                throw new Error(`Há identificadores inválidos ou repetidos em ${campo}.`);
+            }
+            ids.add(String(item.id));
+        }
+    }
+    if(Number(dados.schemaVersion || 0)>VERSAO_BANCO){
+        throw new Error("O banco está em uma versão mais recente do que este index.");
+    }
+    return dados;
+}
+
+function assinaturaBanco(valor){
+    if(Array.isArray(valor)) return `[${valor.map(assinaturaBanco).join(",")}]`;
+    if(valor && typeof valor==="object"){
+        return `{${Object.keys(valor).sort().map(chave=>
+            `${JSON.stringify(chave)}:${assinaturaBanco(valor[chave])}`).join(",")}}`;
+    }
+    return JSON.stringify(valor);
+}
+
+function baseSincronizada(){
+    try{
+        const texto=localStorage.getItem("loc_cloud_base");
+        return texto ? validarBanco(JSON.parse(texto)) : null;
+    }catch(erro){
+        console.error("Não foi possível ler a base de sincronização.",erro);
+        return null;
+    }
+}
+
+async function lerBancoDaNuvem(){
+    const resposta=await fetch(JSONBIN_URL+"/latest",{
+        method:"GET",
+        headers:{"X-Master-Key":MASTER_KEY}
     });
+    if(!resposta.ok) throw new Error(`JSONBin respondeu HTTP ${resposta.status}`);
+    const conteudo=await resposta.json();
+    return validarBanco(conteudo?.record ?? conteudo);
+}
+
+function conferirVersaoRemota(local,remoto,base){
+    if(base){
+        if(assinaturaBanco(base)!==assinaturaBanco(remoto)){
+            throw new Error("O banco mudou em outro lugar. Dados locais mantidos; confira antes de sincronizar.");
+        }
+        return;
+    }
+    // Para uma pendência antiga sem base salva, só é seguro enviar novos registros.
+    for(const campo of CAMPOS_BANCO){
+        const registrosLocais=new Map(local[campo].map(item=>[String(item.id),item]));
+        for(const item of remoto[campo]){
+            const anterior=registrosLocais.get(String(item.id));
+            if(!anterior || assinaturaBanco(anterior)!==assinaturaBanco(item)){
+                throw new Error("Há registros diferentes na nuvem. Dados locais mantidos; confira antes de sincronizar.");
+            }
+        }
+    }
+    if(assinaturaBanco(local.config)!==assinaturaBanco(remoto.config)){
+        throw new Error("As configurações mudaram na nuvem. Dados locais mantidos.");
+    }
+}
+
+function salvarDados(){
+    const local=dadosAtuais();
+    gravarDadosLocais(local);
+    localStorage.setItem("loc_sync_pending","1");
+    estadoSincronizacao("Sincronização pendente");
+    if(!bancoCarregado) return Promise.resolve();
+
+    const versao=++versaoLocal;
+    filaSalvamento=filaSalvamento.catch(()=>{}).then(async()=>{
+        // Sempre conferir o registro remoto antes do PUT, inclusive após quedas de conexão.
+        const remoto=await lerBancoDaNuvem();
+        conferirVersaoRemota(local,remoto,baseSincronizada());
+        const proximo={...remoto,...local,schemaVersion:VERSAO_BANCO};
+        const resposta=await fetch(JSONBIN_URL,{
+            method:"PUT",
+            headers:{
+                "Content-Type":"application/json",
+                "X-Master-Key":MASTER_KEY,
+                "X-Bin-Versioning":"true"
+            },
+            body:JSON.stringify(proximo)
+        });
+        if(!resposta.ok) throw new Error(`JSONBin respondeu HTTP ${resposta.status}`);
+        localStorage.setItem("loc_cloud_base",JSON.stringify(proximo));
+        if(versao===versaoLocal){
+            localStorage.removeItem("loc_sync_pending");
+            estadoSincronizacao("Sincronizado com o JSONBin");
+            mostrarToast("Dados sincronizados com o JSONBin.");
+        }
+    }).catch(erro=>{
+        console.error("Dados locais preservados; sincronização pendente.",erro);
+        if(versao===versaoLocal){
+            estadoSincronizacao("Pendente: confira a conexão ou os dados",true);
+            mostrarToast(erro.message || "Dados locais preservados; sincronização pendente.");
+        }
+    });
+    return filaSalvamento;
+}
+
+function corrigirDisponibilidade(){
+    let corrigiu=false;
+    for(const locacao of locacoes){
+        if(locacao.status!=="Ativa") continue;
+        const ferramenta=ferramentas.find(item=>item.id===locacao.ferramentaId);
+        if(ferramenta?.status==="Disponível"){
+            ferramenta.status="Alugada";
+            corrigiu=true;
+        }
+    }
+    return corrigiu;
+}
+
+async function carregarDadosDaNuvem(){
+    estadoSincronizacao("Carregando banco de dados...");
+    try{
+        const remoto=await lerBancoDaNuvem();
+        bancoCarregado=true;
+        if(localStorage.getItem("loc_sync_pending")==="1"){
+            // A edição feita sem conexão continua disponível, mas só será enviada se segura.
+            atualizarTudo();
+            await salvarDados();
+            return;
+        }
+        clientes=remoto.clientes;
+        ferramentas=remoto.ferramentas;
+        locacoes=remoto.locacoes;
+        contratos=remoto.contratos;
+        config=remoto.config;
+        localStorage.setItem("loc_cloud_base",JSON.stringify(remoto));
+        const estoqueCorrigido=corrigirDisponibilidade();
+        gravarDadosLocais(dadosAtuais());
+        atualizarTudo();
+        estadoSincronizacao("Sincronizado com o JSONBin");
+        if(estoqueCorrigido || Number(remoto.schemaVersion || 0)<VERSAO_BANCO){
+            await salvarDados();
+        }
+    }catch(erro){
+        bancoCarregado=true;
+        console.error("Dados locais preservados; não foi possível carregar o banco.",erro);
+        estadoSincronizacao("Usando dados locais; nuvem indisponível",true);
+        atualizarTudo();
+        mostrarToast("Sem acesso ao banco. Dados locais preservados.");
+    }finally{
+        esconderPreloader();
+    }
+}
+
+function baixarBackupDados(){
+    const backup={...(baseSincronizada() || {}),...dadosAtuais(),schemaVersion:VERSAO_BANCO};
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+    const link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download=`backup-locacao-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(link.href),1000);
 }
 
 function esconderPreloader(){
@@ -1682,7 +1994,8 @@ function gerarId(){
 
 
 function dataHoje(){
-    return new Date().toISOString().split("T")[0];
+    const agora=new Date();
+    return `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-${String(agora.getDate()).padStart(2,"0")}`;
 }
 
 
@@ -1779,6 +2092,7 @@ function fecharModal(){
     clienteSelecionadoLocacao = null;
     ferramentaEditando = null;
     clienteEditando = null;
+    locacaoEditando = null;
 }
 
 
@@ -2243,9 +2557,12 @@ function renderFerramentas(){
    NOVA LOCAÇÃO
 ===================================================== */
 
-function abrirNovaLocacao(){
-    clienteSelecionadoLocacao = null;
-    abrirModal("Nova Locação",`
+function abrirNovaLocacao(id=null){
+    const atual = id ? locacoes.find(l=>l.id===id) : null;
+    if(id && !atual){ mostrarToast("Locação não encontrada."); return; }
+    locacaoEditando = atual?.id || null;
+    clienteSelecionadoLocacao = atual?.clienteId || null;
+    abrirModal(atual ? "Editar Locação" : "Nova Locação",`
         <div class="form-grid">
             <div class="form-group full">
                 <label>Cliente *</label>
@@ -2254,7 +2571,7 @@ function abrirNovaLocacao(){
                         id="locacaoClienteBusca"
                         autocomplete="off"
                         placeholder="Digite o nome do cliente..."
-                        oninput="buscarClienteLocacao()"
+                        oninput="alterarBuscaClienteLocacao()"
                         onfocus="buscarClienteLocacao()"
                     >
                     <input type="hidden" id="locacaoCliente">
@@ -2268,7 +2585,7 @@ function abrirNovaLocacao(){
                 <select id="locacaoFerramenta" onchange="alterarTipoCobranca()">
                     <option value="">Selecione a ferramenta</option>
                     ${ferramentas
-                        .filter(f=>f.status==="Disponível")
+                        .filter(f=>atual?.status==="Finalizada" || f.status==="Disponível" || f.id===atual?.ferramentaId)
                         .map(f=>`
                             <option value="${f.id}">
                                 ${escapeHtml(f.nome)} —${escapeHtml(f.codigo)}
@@ -2308,14 +2625,46 @@ function abrirNovaLocacao(){
             </div>
 
             <div class="form-group">
-                <label>Forma de pagamento</label>
+                <label>Quando receber? *</label>
+                <select id="locacaoMomentoPagamento" onchange="alterarMomentoPagamento()">
+                    <option value="">Selecione...</option>
+                    <option value="entrada">No ato do contrato</option>
+                    <option value="devolucao">Na devolução da ferramenta</option>
+                    ${atual && !atual.momentoPagamento ? '<option value="legado">Não informado (registro antigo)</option>' : ''}
+                </select>
+            </div>
+
+            <div class="form-group pagamento-extra" id="blocoFormaPagamento" hidden>
+                <label>Forma de pagamento *</label>
                 <select id="locacaoPagamento">
+                    <option value="">Selecione a forma...</option>
                     <option value="Pix">Pix</option>
                     <option value="Dinheiro">Dinheiro</option>
                     <option value="Cartão">Cartão</option>
                     <option value="Boleto">Boleto</option>
                     <option value="Outro">Outro</option>
                 </select>
+            </div>
+
+            ${atual ? `<div class="form-group">
+                <label>Situação do pagamento</label>
+                <select id="locacaoStatusPagamento" onchange="atualizarCamposPagamento()">
+                    <option value="Pago">Pago</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Não informado">Não informado (antigo)</option>
+                </select>
+            </div>
+            <div class="form-group pagamento-extra" id="blocoValorPago" hidden>
+                <label>Valor recebido (R$)</label>
+                <input id="locacaoValorPago" type="number" step="0.01" min="0">
+            </div>
+            <div class="form-group pagamento-extra" id="blocoDataPagamento" hidden>
+                <label>Data do recebimento</label>
+                <input id="locacaoDataPagamento" type="date">
+            </div>` : ''}
+
+            <div class="form-group full">
+                <small style="color:#6b7280;">No pagamento na entrada, o valor é registrado ao salvar o contrato. Na devolução, o sistema solicitará a forma de pagamento antes de finalizar.</small>
             </div>
 
             <div class="form-group full">
@@ -2364,9 +2713,63 @@ function abrirNovaLocacao(){
         </div>
         <div class="form-actions">
             <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="salvarLocacao()">📦 Criar locação</button>
+            <button class="btn btn-primary" onclick="salvarLocacao()">${atual ? '💾 Salvar alterações' : '📦 Criar locação'}</button>
         </div>
     `);
+
+    if(atual){
+        selecionarClienteLocacao(atual.clienteId);
+        document.getElementById("locacaoFerramenta").value=atual.ferramentaId;
+        document.getElementById("locacaoRetirada").value=atual.retirada || "";
+        document.getElementById("locacaoDevolucao").value=atual.devolucao || "";
+        document.getElementById("locacaoTipoCobranca").value=atual.tipoCobranca || "personalizado";
+        document.getElementById("locacaoValor").value=atual.valor ?? "";
+        document.getElementById("locacaoCaucao").value=atual.caucao ?? 0;
+        document.getElementById("locacaoMomentoPagamento").value=atual.momentoPagamento || "legado";
+        document.getElementById("locacaoStatusPagamento").value=atual.pagamentoStatus || "Não informado";
+        document.getElementById("locacaoPagamento").value=atual.pagamento || "";
+        document.getElementById("locacaoValorPago").value=atual.valorPago ?? 0;
+        document.getElementById("locacaoDataPagamento").value=atual.dataPagamento?.slice(0,10) || "";
+        const endereco=atual.localLocacao || {};
+        for(const [sufixo,prop] of Object.entries({Cep:"cep",Numero:"numero",Endereco:"endereco",Bairro:"bairro",Cidade:"cidade",Estado:"estado",Referencia:"referencia"})){
+            document.getElementById("locacao"+sufixo).value=endereco[prop] || "";
+        }
+        document.getElementById("locacaoObservacoes").value=atual.observacoes || "";
+    }
+    atualizarCamposPagamento();
+}
+
+function editarLocacao(id){
+    abrirNovaLocacao(id);
+}
+
+function alterarBuscaClienteLocacao(){
+    clienteSelecionadoLocacao = null;
+    document.getElementById("locacaoCliente").value = "";
+    document.getElementById("clienteSelecionadoInfo").style.display = "none";
+    buscarClienteLocacao();
+}
+
+function alterarMomentoPagamento(){
+    const momento=document.getElementById("locacaoMomentoPagamento").value;
+    const status=document.getElementById("locacaoStatusPagamento");
+    if(status){
+        if(momento==="entrada") status.value="Pago";
+        else if(momento==="legado") status.value="Não informado";
+        else if(momento==="devolucao" && status.value==="Não informado") status.value="Pendente";
+    }
+    atualizarCamposPagamento();
+}
+
+function atualizarCamposPagamento(){
+    const momento=document.getElementById("locacaoMomentoPagamento")?.value;
+    const status=document.getElementById("locacaoStatusPagamento")?.value;
+    const pago=locacaoEditando ? status==="Pago" : momento==="entrada";
+    document.getElementById("blocoFormaPagamento").hidden=!pago;
+    if(locacaoEditando){
+        document.getElementById("blocoValorPago").hidden=!pago;
+        document.getElementById("blocoDataPagamento").hidden=!pago;
+    }
 }
 
 
@@ -2436,49 +2839,94 @@ function alterarTipoCobranca(){
 
     if(tipo==="diaria"){
         campo.value = ferramenta.diaria || 0;
-        campo.readOnly = true;
     } else if(tipo==="semanal"){
         campo.value = ferramenta.semanal || 0;
-        campo.readOnly = true;
     } else if(tipo==="mensal"){
         campo.value = ferramenta.mensal || 0;
-        campo.readOnly = true;
     } else{
         campo.value="";
-        campo.readOnly=false;
         campo.focus();
     }
 }
 
 
 function salvarLocacao(){
+    const anterior=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
+    if(locacaoEditando && !anterior){ mostrarToast("Locação não encontrada."); return; }
     const clienteId = document.getElementById("locacaoCliente").value;
     const ferramentaId = document.getElementById("locacaoFerramenta").value;
     const retirada = document.getElementById("locacaoRetirada").value;
     const devolucao = document.getElementById("locacaoDevolucao").value;
     const tipoCobranca = document.getElementById("locacaoTipoCobranca").value;
-    const valor = Number(document.getElementById("locacaoValor").value || 0);
+    const valor = Number(document.getElementById("locacaoValor").value);
+    const caucao = Number(document.getElementById("locacaoCaucao").value || 0);
+    const momentoPagamento = document.getElementById("locacaoMomentoPagamento").value;
 
-    if(!clienteId){ mostrarToast("Selecione um cliente."); return; }
+    if(!clientes.some(c=>c.id===clienteId)){ mostrarToast("Selecione um cliente."); return; }
     if(!ferramentaId){ mostrarToast("Selecione uma ferramenta."); return; }
     if(!retirada || !devolucao){ mostrarToast("Informe as datas."); return; }
     if(devolucao < retirada){ mostrarToast("A devolução não pode ser anterior à retirada."); return; }
-    if(valor <= 0){ mostrarToast("Informe um valor válido."); return; }
+    if(!Number.isFinite(valor) || valor <= 0){ mostrarToast("Informe um valor válido."); return; }
+    if(!Number.isFinite(caucao) || caucao < 0){ mostrarToast("Informe uma caução válida."); return; }
+    if(!["entrada","devolucao","legado"].includes(momentoPagamento) ||
+       (momentoPagamento==="legado" && (!anterior || anterior.momentoPagamento))){
+        mostrarToast("Escolha quando o pagamento será feito."); return;
+    }
 
     const ferramenta = ferramentas.find(f=>f.id===ferramentaId);
     if(!ferramenta){ mostrarToast("Ferramenta não encontrada."); return; }
-    if(ferramenta.status !== "Disponível"){ mostrarToast("Esta ferramenta não está disponível."); return; }
+    const ativa = !anterior || anterior.status==="Ativa";
+    if(ativa && ferramentaId!==anterior?.ferramentaId &&
+       (ferramenta.status!=="Disponível" ||
+        locacoes.some(l=>l.id!==anterior?.id && l.status==="Ativa" && l.ferramentaId===ferramentaId))){
+        mostrarToast("Esta ferramenta não está disponível."); return;
+    }
+
+    const statusPagamento=anterior
+        ? document.getElementById("locacaoStatusPagamento").value
+        : momentoPagamento==="entrada" ? "Pago" : "Pendente";
+    if(momentoPagamento==="entrada" && statusPagamento!=="Pago"){
+        mostrarToast("O pagamento na entrada precisa estar confirmado."); return;
+    }
+    if(momentoPagamento==="legado" && statusPagamento!=="Não informado"){
+        mostrarToast("Selecione quando o pagamento ocorreu para atualizar o registro antigo."); return;
+    }
+    if(momentoPagamento!=="legado" && !["Pago","Pendente"].includes(statusPagamento)){
+        mostrarToast("Selecione a situação do pagamento."); return;
+    }
+
+    const dadosPagamento={};
+    if(momentoPagamento!=="legado"){
+        dadosPagamento.momentoPagamento=momentoPagamento;
+        dadosPagamento.pagamentoStatus=statusPagamento;
+        if(statusPagamento==="Pago"){
+            const forma=document.getElementById("locacaoPagamento").value;
+            const recebido=anterior ? Number(document.getElementById("locacaoValorPago").value) : valor;
+            const data=anterior ? document.getElementById("locacaoDataPagamento").value : dataHoje();
+            if(!forma){ mostrarToast("Selecione a forma de pagamento."); return; }
+            if(!Number.isFinite(recebido) || Math.round(recebido*100)!==Math.round(valor*100)){
+                mostrarToast("Para marcar como pago, o valor recebido deve ser igual ao valor do contrato."); return;
+            }
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(data)){
+                mostrarToast("Informe a data do pagamento."); return;
+            }
+            Object.assign(dadosPagamento,{pagamento:forma,valorPago:recebido,dataPagamento:data});
+        }else{
+            Object.assign(dadosPagamento,{pagamento:"",valorPago:0,dataPagamento:""});
+        }
+    }
 
     const locacao = {
-        id:gerarId(),
+        ...(anterior || {}),
+        id:anterior?.id || gerarId(),
         clienteId,
         ferramentaId,
         retirada,
         devolucao,
         tipoCobranca,
         valor,
-        caucao:Number(document.getElementById("locacaoCaucao").value || 0),
-        pagamento:document.getElementById("locacaoPagamento").value,
+        caucao,
+        ...dadosPagamento,
         localLocacao:{
             cep:document.getElementById("locacaoCep").value.trim(),
             numero:document.getElementById("locacaoNumero").value.trim(),
@@ -2489,66 +2937,137 @@ function salvarLocacao(){
             referencia:document.getElementById("locacaoReferencia").value.trim()
         },
         observacoes:document.getElementById("locacaoObservacoes").value.trim(),
-        status:"Ativa",
-        criadaEm:new Date().toISOString()
+        status:anterior?.status || "Ativa",
+        criadaEm:anterior?.criadaEm || new Date().toISOString(),
+        ...(anterior ? {atualizadaEm:new Date().toISOString()} : {})
     };
 
-    locacoes.push(locacao);
-    ferramenta.status="Alugada";
-
-    const numeroContrato = gerarNumeroContrato();
-    const contrato = {
-        id:gerarId(),
-        numero:numeroContrato,
-        locacaoId:locacao.id,
-        status:"Ativo",
-        criadoEm:new Date().toISOString()
-    };
-    contratos.push(contrato);
+    let numeroContrato="";
+    if(anterior){
+        const index=locacoes.findIndex(l=>l.id===anterior.id);
+        locacoes[index]=locacao;
+        if(anterior.status==="Ativa" && anterior.ferramentaId!==ferramentaId){
+            const antiga=ferramentas.find(f=>f.id===anterior.ferramentaId);
+            if(antiga?.status==="Alugada" &&
+               !locacoes.some(l=>l.id!==locacao.id && l.status==="Ativa" && l.ferramentaId===antiga.id)){
+                antiga.status="Disponível";
+            }
+        }
+        if(anterior.status==="Ativa") ferramenta.status="Alugada";
+    }else{
+        locacoes.push(locacao);
+        ferramenta.status="Alugada";
+        numeroContrato=gerarNumeroContrato();
+        contratos.push({
+            id:gerarId(),numero:numeroContrato,locacaoId:locacao.id,
+            status:"Ativo",criadoEm:new Date().toISOString()
+        });
+    }
 
     salvarDados();
     fecharModal();
-    renderLocacoes();
-    renderFerramentas();
-    renderContratos();
     atualizarTudo();
-    mostrarToast(`Locação criada. Contrato nº ${numeroContrato}.`);
+    mostrarToast(anterior ? "Locação atualizada." : `Locação criada. Contrato nº ${numeroContrato}.`);
 }
 
 
 function finalizarLocacao(id){
     const locacao = locacoes.find(l=>l.id===id);
-    if(!locacao) return;
-    if(!confirm("Deseja finalizar esta locação?")) return;
+    if(!locacao || locacao.status!=="Ativa") return;
 
+    if(locacao.pagamentoStatus==="Pago" && locacao.pagamento && locacao.dataPagamento &&
+       Math.round(Number(locacao.valorPago || 0)*100)===Math.round(Number(locacao.valor || 0)*100)){
+        if(!confirm("O pagamento já está registrado. Confirmar devolução e finalizar a locação?")) return;
+        concluirFinalizacao(locacao);
+        return;
+    }
+
+    abrirModal("Pagamento e devolução",`
+        <p class="info-box">Contrato: <strong>${formatarMoeda(locacao.valor)}</strong>. Escolha a forma e a data em que o valor foi realmente recebido antes de finalizar.</p>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Forma de pagamento *</label>
+                <select id="pagamentoFinalForma">
+                    <option value="">Selecione...</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartão">Cartão</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Data em que recebeu *</label>
+                <input id="pagamentoFinalData" type="date" value="${dataHoje()}">
+            </div>
+            <div class="form-group full">
+                <label>Quando foi recebido? *</label>
+                <select id="pagamentoFinalMomento">
+                    <option value="devolucao">Agora, na devolução</option>
+                    <option value="entrada">Já havia sido pago na entrada (registro antigo)</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-success" onclick="confirmarPagamentoEFinalizar('${locacao.id}')">💰 Registrar e finalizar</button>
+        </div>
+    `);
+    document.getElementById("pagamentoFinalForma").value=locacao.pagamento || "";
+}
+
+function confirmarPagamentoEFinalizar(id){
+    const locacao=locacoes.find(l=>l.id===id);
+    if(!locacao || locacao.status!=="Ativa"){
+        mostrarToast("Locação ativa não encontrada."); return;
+    }
+    const forma=document.getElementById("pagamentoFinalForma")?.value;
+    const data=document.getElementById("pagamentoFinalData")?.value;
+    const momento=document.getElementById("pagamentoFinalMomento")?.value;
+    if(!forma || !/^\d{4}-\d{2}-\d{2}$/.test(data || "") || !["entrada","devolucao"].includes(momento)){
+        mostrarToast("Informe a forma e a data do pagamento."); return;
+    }
+    if(!confirm("Confirmar o recebimento e a devolução desta ferramenta?")) return;
+
+    locacao.pagamento=forma;
+    locacao.momentoPagamento=momento;
+    locacao.pagamentoStatus="Pago";
+    locacao.valorPago=Number(locacao.valor || 0);
+    locacao.dataPagamento=data;
+    concluirFinalizacao(locacao);
+}
+
+function concluirFinalizacao(locacao){
+    if(locacao.status!=="Ativa") return;
     locacao.status="Finalizada";
-    const ferramenta = ferramentas.find(f=>f.id===locacao.ferramentaId);
-    if(ferramenta) ferramenta.status="Disponível";
-
-    const contrato = contratos.find(c=>c.locacaoId===id);
+    locacao.devolvidaEm=dataHoje();
+    const ferramenta=ferramentas.find(f=>f.id===locacao.ferramentaId);
+    if(ferramenta?.status==="Alugada" &&
+       !locacoes.some(l=>l.id!==locacao.id && l.status==="Ativa" && l.ferramentaId===ferramenta.id)){
+        ferramenta.status="Disponível";
+    }
+    const contrato=contratos.find(c=>c.locacaoId===locacao.id);
     if(contrato) contrato.status="Finalizado";
 
     salvarDados();
-    renderLocacoes();
-    renderFerramentas();
-    renderContratos();
+    fecharModal();
     atualizarTudo();
-    mostrarToast("Locação finalizada.");
+    mostrarToast("Pagamento e devolução registrados. Locação finalizada.");
 }
 
 
 function excluirLocacao(id){
-    if(!confirm("Excluir esta locação?")) return;
+    if(!confirm("Excluir esta locação, seu contrato e o histórico financeiro correspondente?")) return;
     const locacao = locacoes.find(l=>l.id===id);
     if(!locacao) return;
 
     const ferramenta = ferramentas.find(f=>f.id===locacao.ferramentaId);
-    if(ferramenta && ferramenta.status==="Alugada"){
-        ferramenta.status="Disponível";
-    }
-
     locacoes = locacoes.filter(l=>l.id!==id);
     contratos = contratos.filter(c=>c.locacaoId!==id);
+    if(locacao.status==="Ativa" && ferramenta?.status==="Alugada" &&
+       !locacoes.some(l=>l.status==="Ativa" && l.ferramentaId===ferramenta.id)){
+        ferramenta.status="Disponível";
+    }
 
     salvarDados();
     renderLocacoes();
@@ -2563,6 +3082,12 @@ function badgeStatusLocacao(status){
     if(status==="Ativa") return `<span class="badge badge-blue">Ativa</span>`;
     if(status==="Finalizada") return `<span class="badge badge-green">Finalizada</span>`;
     return `<span class="badge badge-gray">${escapeHtml(status)}</span>`;
+}
+
+function badgeStatusPagamento(locacao){
+    if(locacao.pagamentoStatus==="Pago") return '<span class="badge badge-green">Pago</span>';
+    if(locacao.pagamentoStatus==="Pendente") return '<span class="badge badge-yellow">A receber</span>';
+    return '<span class="badge badge-gray">Não informado</span>';
 }
 
 
@@ -2587,7 +3112,7 @@ function renderLocacoes(){
     });
 
     if(!lista.length){
-        tbody.innerHTML=`<tr><td colspan="8" class="empty">Nenhuma locação cadastrada.</td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="9" class="empty">Nenhuma locação cadastrada.</td></tr>`;
         return;
     }
 
@@ -2607,10 +3132,12 @@ function renderLocacoes(){
                 <td>${formatarData(l.devolucao)}</td>
                 <td>${textoCobranca(l.tipoCobranca)}</td>
                 <td>${formatarMoeda(l.valor)}</td>
+                <td>${badgeStatusPagamento(l)}</td>
                 <td>${badgeStatusLocacao(l.status)}</td>
                 <td>
                     <div class="actions">
                         ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
+                        <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
                         ${l.status==="Ativa" ? `<button class="btn btn-success btn-sm" onclick="finalizarLocacao('${l.id}')">Finalizar</button>` : ""}
                         <button class="btn btn-danger btn-sm" onclick="excluirLocacao('${l.id}')">Excluir</button>
                     </div>
@@ -2733,7 +3260,11 @@ function visualizarContrato(id){
             <p>Tipo de cobrança: <strong>${textoCobranca(locacao.tipoCobranca)}</strong></p>
             <p>Valor da locação: <strong>${formatarMoeda(locacao.valor)}</strong></p>
             <p>Caução: <strong>${formatarMoeda(locacao.caucao)}</strong></p>
-            <p>Forma de pagamento: <strong>${escapeHtml(locacao.pagamento || "-")}</strong></p>
+            <p>Pagamento previsto: <strong>${locacao.momentoPagamento==="entrada" ? "No ato do contrato" : locacao.momentoPagamento==="devolucao" ? "Na devolução" : "Não informado"}</strong></p>
+            <p>Situação: ${badgeStatusPagamento(locacao)}</p>
+            <p>Forma de pagamento: <strong>${escapeHtml(locacao.pagamento || "Não informada")}</strong></p>
+            ${locacao.pagamentoStatus==="Pago" ? `<p>Valor recebido: <strong>${formatarMoeda(valorRecebidoLocacao(locacao))}</strong> em ${escapeHtml(formatarData(locacao.dataPagamento))}</p>` : ""}
+            ${locacao.devolvidaEm ? `<p>Devolução realizada: <strong>${escapeHtml(formatarData(locacao.devolvidaEm))}</strong></p>` : ""}
 
             <h3>6. TERMOS E CONDIÇÕES</h3>
             <p style="white-space:pre-line;">${escapeHtml(config.termo || termoPadrao)}</p>
@@ -2795,15 +3326,196 @@ function liberarManutencao(id){
 ===================================================== */
 
 function atualizarFinanceiro(){
-    const total=locacoes.length;
-    const faturamento=locacoes.reduce((s,l)=>s+Number(l.valor||0),0);
-    const caucoes=locacoes.reduce((s,l)=>s+Number(l.caucao||0),0);
-    const ticket=total ? faturamento/total : 0;
+    const mes=document.getElementById("finMes").value;
+    const status=document.getElementById("finStatus").value;
+    const periodo=mes ? locacoes.filter(l=>(l.retirada || "").slice(0,7)===mes) : locacoes;
+    const valorContratado=periodo.reduce((s,l)=>s+Number(l.valor || 0),0);
+    const pagamentos=locacoes.filter(l=>l.pagamentoStatus==="Pago" && l.dataPagamento &&
+        (!mes || l.dataPagamento.slice(0,7)===mes)).slice()
+        .sort((a,b)=>(b.dataPagamento || "").localeCompare(a.dataPagamento || ""));
+    const recebido=pagamentos.reduce((s,l)=>s+valorRecebidoLocacao(l),0);
+    const aReceber=periodo.reduce((s,l)=>l.pagamentoStatus==="Pendente"
+        ? s+Math.max(0,Number(l.valor || 0)-valorRecebidoLocacao(l)) : s,0);
 
-    document.getElementById("finLocacoes").textContent=total;
-    document.getElementById("finFaturamento").textContent=formatarMoeda(faturamento);
-    document.getElementById("finCaucoes").textContent=formatarMoeda(caucoes);
-    document.getElementById("finTicket").textContent=formatarMoeda(ticket);
+    document.getElementById("finPeriodoTexto").textContent=mes ? nomeMes(mes) : "Todo o histórico";
+    document.getElementById("finLocacoes").textContent=periodo.length;
+    document.getElementById("finFaturamento").textContent=formatarMoeda(valorContratado);
+    document.getElementById("finRecebido").textContent=formatarMoeda(recebido);
+    document.getElementById("finPendente").textContent=formatarMoeda(aReceber);
+    document.getElementById("finAtivas").textContent=periodo.filter(l=>l.status==="Ativa").length;
+    document.getElementById("finAtivasGerais").textContent=`Ativas agora em todo o histórico: ${locacoes.filter(l=>l.status==="Ativa").length}.`;
+    document.getElementById("finCaucoes").textContent=formatarMoeda(periodo.reduce((s,l)=>s+Number(l.caucao || 0),0));
+    document.getElementById("finTicket").textContent=formatarMoeda(periodo.length ? valorContratado/periodo.length : 0);
+    document.getElementById("finSemInfo").textContent=periodo.filter(l=>!l.pagamentoStatus || l.pagamentoStatus==="Não informado").length;
+
+    renderGraficoEvolucao(mes);
+    renderGraficoSituacao(periodo);
+    renderRankingFinanceiro(periodo,"clienteId",clientes,"finTopClientes");
+    renderRankingFinanceiro(periodo,"ferramentaId",ferramentas,"finTopFerramentas");
+
+    const historico=periodo.filter(l=>!status || l.status===status)
+        .slice().sort((a,b)=>(b.retirada || "").localeCompare(a.retirada || "") ||
+            (b.criadaEm || "").localeCompare(a.criadaEm || ""));
+    document.getElementById("finQuantidadeHistorico").textContent=`(${historico.length} registro${historico.length===1 ? "" : "s"})`;
+    document.getElementById("finHistorico").innerHTML=historico.length ? historico.map(l=>{
+        const cliente=clientes.find(c=>c.id===l.clienteId);
+        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
+        const contrato=contratos.find(c=>c.locacaoId===l.id);
+        const conhecido=l.pagamentoStatus==="Pago" || l.pagamentoStatus==="Pendente";
+        const recebidoLocacao=valorRecebidoLocacao(l);
+        return `<tr>
+            <td>${escapeHtml(formatarData(l.retirada))}</td>
+            <td>${escapeHtml(formatarData(l.devolucao))}</td>
+            <td>${escapeHtml(cliente?.nome || "Cliente não localizado")}</td>
+            <td>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</td>
+            <td>${formatarMoeda(l.valor)}</td>
+            <td>${conhecido ? formatarMoeda(recebidoLocacao) : "—"}</td>
+            <td>${conhecido ? formatarMoeda(Math.max(0,Number(l.valor || 0)-recebidoLocacao)) : "—"}</td>
+            <td>${badgeStatusPagamento(l)}${l.pagamentoStatus==="Pago" ? `<br><small>${escapeHtml(l.pagamento || "-")} · ${escapeHtml(formatarData(l.dataPagamento))}</small>` : ""}</td>
+            <td>${badgeStatusLocacao(l.status)}</td>
+            <td><div class="actions">
+                <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
+                ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
+            </div></td>
+        </tr>`;
+    }).join("") : '<tr><td colspan="10" class="empty">Nenhuma locação neste período e status.</td></tr>';
+
+    document.getElementById("finQuantidadeRecebimentos").textContent=`(${pagamentos.length} registro${pagamentos.length===1 ? "" : "s"})`;
+    document.getElementById("finRecebimentos").innerHTML=pagamentos.length ? pagamentos.map(l=>{
+        const cliente=clientes.find(c=>c.id===l.clienteId);
+        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
+        const contrato=contratos.find(c=>c.locacaoId===l.id);
+        return `<tr><td>${escapeHtml(formatarData(l.dataPagamento))}</td>
+            <td>${escapeHtml(cliente?.nome || "-")}</td><td>${escapeHtml(ferramenta?.nome || "-")}</td>
+            <td>${escapeHtml(formatarData(l.retirada))}</td><td>${escapeHtml(l.pagamento || "-")}</td>
+            <td>${formatarMoeda(valorRecebidoLocacao(l))}</td>
+            <td>${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">#${escapeHtml(contrato.numero)}</button>` : "-"}</td></tr>`;
+    }).join("") : '<tr><td colspan="7" class="empty">Nenhum pagamento confirmado neste período.</td></tr>';
+}
+
+function mesAtualLocal(){ return dataHoje().slice(0,7); }
+
+function nomeMes(mes){
+    const [ano,numero]=mes.split("-").map(Number);
+    return new Intl.DateTimeFormat("pt-BR",{month:"long",year:"numeric"}).format(new Date(ano,numero-1,1));
+}
+
+function filtrarMesAtual(){
+    document.getElementById("finMes").value=mesAtualLocal();
+    atualizarFinanceiro();
+}
+
+function mostrarHistoricoCompleto(){
+    document.getElementById("finMes").value="";
+    atualizarFinanceiro();
+}
+
+function exportarFinanceiroCsv(){
+    const mes=document.getElementById("finMes").value;
+    const status=document.getElementById("finStatus").value;
+    const lista=locacoes.filter(l=>(!mes || (l.retirada || "").slice(0,7)===mes) &&
+        (!status || l.status===status)).slice().sort((a,b)=>(b.retirada || "").localeCompare(a.retirada || ""));
+    const linhas=[
+        ["Retirada","Devolução prevista","Cliente","Ferramenta","Valor contratado","Caução","Valor recebido","Valor a receber","Situação pagamento","Forma","Data pagamento","Status locação"],
+        ...lista.map(l=>{
+            const conhecido=l.pagamentoStatus==="Pago" || l.pagamentoStatus==="Pendente";
+            const recebido=valorRecebidoLocacao(l);
+            return [l.retirada,l.devolucao,clientes.find(c=>c.id===l.clienteId)?.nome || "",
+                ferramentas.find(f=>f.id===l.ferramentaId)?.nome || "",Number(l.valor || 0),
+                Number(l.caucao || 0),conhecido ? recebido : "",
+                conhecido ? Math.max(0,Number(l.valor || 0)-recebido) : "",
+                l.pagamentoStatus || "Não informado",l.pagamento || "",l.dataPagamento || "",l.status || ""];
+        })
+    ];
+    const celula=valor=>{
+        let texto=String(valor ?? "");
+        if(/^\s*[=+\-@]/.test(texto)) texto="'"+texto;
+        return `"${texto.replace(/"/g,'""')}"`;
+    };
+    const csv="\uFEFF"+linhas.map(linha=>linha.map(celula).join(";")).join("\r\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    const link=document.createElement("a");
+    link.href=url;
+    link.download=`locacoes-${mes || "historico-completo"}.csv`;
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function valorRecebidoLocacao(locacao){
+    if(locacao.pagamentoStatus!=="Pago") return 0;
+    const valor=Number(locacao.valorPago ?? locacao.valor ?? 0);
+    return Number.isFinite(valor) ? valor : 0;
+}
+
+function renderGraficoEvolucao(mes){
+    const referencia=mes || mesAtualLocal();
+    const [ano,numero]=referencia.split("-").map(Number);
+    const meses=Array.from({length:12},(_,i)=>{
+        const data=new Date(ano,numero-1-(11-i),1);
+        const chave=`${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}`;
+        return {
+            chave,
+            rotulo:new Intl.DateTimeFormat("pt-BR",{month:"short"}).format(data).replace(".","") + (data.getMonth()===0 ? String(data.getFullYear()).slice(2) : ""),
+            contratado:locacoes.filter(l=>(l.retirada || "").slice(0,7)===chave).reduce((s,l)=>s+Number(l.valor || 0),0),
+            recebido:locacoes.filter(l=>l.pagamentoStatus==="Pago" && (l.dataPagamento || "").slice(0,7)===chave)
+                .reduce((s,l)=>s+valorRecebidoLocacao(l),0)
+        };
+    });
+    const maximo=Math.max(1,...meses.flatMap(m=>[m.contratado,m.recebido]));
+    const alturaMaxima=160;
+    const base=202;
+    const eixos=[0,0.5,1].map(fracao=>{
+        const y=base-fracao*alturaMaxima;
+        const valor=new Intl.NumberFormat("pt-BR",{notation:"compact",maximumFractionDigits:1}).format(maximo*fracao);
+        return `<line x1="48" x2="716" y1="${y}" y2="${y}" stroke="#e5e7eb"/><text x="44" y="${y-4}" text-anchor="end" fill="#6b7280" font-size="10">${escapeHtml(valor)}</text>`;
+    }).join("");
+    const barras=meses.map((m,i)=>{
+        const x=55+i*55;
+        const hContrato=Math.max(0,m.contratado/maximo*alturaMaxima);
+        const hRecebido=Math.max(0,m.recebido/maximo*alturaMaxima);
+        return `<g><rect x="${x}" y="${base-hContrato}" width="17" height="${hContrato}" rx="3" fill="#2563eb"><title>${escapeHtml(nomeMes(m.chave))}: contratado ${escapeHtml(formatarMoeda(m.contratado))}</title></rect>
+            <rect x="${x+19}" y="${base-hRecebido}" width="17" height="${hRecebido}" rx="3" fill="#16a34a"><title>${escapeHtml(nomeMes(m.chave))}: recebido ${escapeHtml(formatarMoeda(m.recebido))}</title></rect>
+            <text x="${x+18}" y="224" text-anchor="middle" fill="#6b7280" font-size="10">${escapeHtml(m.rotulo)}</text></g>`;
+    }).join("");
+    document.getElementById("finGraficoMensal").innerHTML=`<svg viewBox="0 0 730 238" role="img" aria-label="Gráfico dos contratos iniciados e valores recebidos nos últimos doze meses">${eixos}${barras}</svg>`;
+}
+
+function renderGraficoSituacao(periodo){
+    const total=periodo.length;
+    const ativas=periodo.filter(l=>l.status==="Ativa").length;
+    const finalizadas=total-ativas;
+    const circunferencia=2*Math.PI*62;
+    const fracao=total ? ativas/total : 0;
+    document.getElementById("finGraficoStatus").innerHTML=`
+        <svg viewBox="0 0 360 200" role="img" aria-label="${ativas} locações ativas e ${finalizadas} finalizadas">
+            <circle cx="100" cy="100" r="62" fill="none" stroke="${total ? '#16a34a' : '#e5e7eb'}" stroke-width="21"/>
+            ${ativas ? `<circle cx="100" cy="100" r="62" fill="none" stroke="#2563eb" stroke-width="21" transform="rotate(-90 100 100)" stroke-dasharray="${fracao*circunferencia} ${circunferencia}"/>` : ""}
+            <text x="100" y="95" text-anchor="middle" font-size="26" font-weight="bold" fill="#111827">${total}</text>
+            <text x="100" y="117" text-anchor="middle" font-size="11" fill="#6b7280">contratos</text>
+            <circle cx="210" cy="82" r="6" fill="#2563eb"/><text x="224" y="87" font-size="15" fill="#374151">Ativas: ${ativas}</text>
+            <circle cx="210" cy="118" r="6" fill="#16a34a"/><text x="224" y="123" font-size="15" fill="#374151">Finalizadas: ${finalizadas}</text>
+        </svg>`;
+}
+
+function renderRankingFinanceiro(periodo,chave,cadastros,elementoId){
+    const agrupados=new Map();
+    periodo.forEach(l=>{
+        const id=l[chave];
+        const item=agrupados.get(id) || {quantidade:0,valor:0};
+        item.quantidade++;
+        item.valor+=Number(l.valor || 0);
+        agrupados.set(id,item);
+    });
+    const ranking=[...agrupados.entries()].sort((a,b)=>b[1].quantidade-a[1].quantidade || b[1].valor-a[1].valor).slice(0,5);
+    const maximo=ranking[0]?.[1].quantidade || 1;
+    document.getElementById(elementoId).innerHTML=ranking.length ? ranking.map(([id,item])=>{
+        const cadastro=cadastros.find(c=>c.id===id);
+        const largura=Math.round(item.quantidade/maximo*100);
+        return `<div class="ranking-item"><div class="ranking-cabecalho">
+            <strong>${escapeHtml(cadastro?.nome || "Cadastro removido")}</strong>
+            <span>${item.quantidade} ${item.quantidade===1 ? "locação" : "locações"} · ${formatarMoeda(item.valor)}</span>
+            </div><div class="ranking-trilho"><div style="width:${largura}%"></div></div></div>`;
+    }).join("") : '<p class="descricao">Nenhuma locação neste período.</p>';
 }
 
 
@@ -2813,12 +3525,13 @@ function atualizarFinanceiro(){
 
 function atualizarDashboard(){
     const ativas=locacoes.filter(l=>l.status==="Ativa");
-    const faturamento=locacoes.reduce((s,l)=>s+Number(l.valor||0),0);
+    const recebidoMes=locacoes.reduce((s,l)=>l.pagamentoStatus==="Pago" &&
+        (l.dataPagamento || "").slice(0,7)===mesAtualLocal() ? s+valorRecebidoLocacao(l) : s,0);
 
     document.getElementById("dashClientes").textContent=clientes.length;
     document.getElementById("dashFerramentas").textContent=ferramentas.length;
     document.getElementById("dashLocacoes").textContent=ativas.length;
-    document.getElementById("dashFaturamento").textContent=formatarMoeda(faturamento);
+    document.getElementById("dashFaturamento").textContent=formatarMoeda(recebidoMes);
 
     const tbody=document.getElementById("dashboardLocacoes");
     const recentes=locacoes.slice().reverse().slice(0,8);
@@ -2917,6 +3630,7 @@ document.getElementById("modalOverlay").addEventListener("click",function(e){
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded",()=>{
+    document.getElementById("finMes").value=mesAtualLocal();
     document.getElementById("codigoAcesso").focus();
 });
 
