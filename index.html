@@ -242,6 +242,21 @@ body.acesso-bloqueado .tela-acesso{
 .sync-controles{display:flex;align-items:center;gap:10px;}
 .sync-botao{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:8px 11px;cursor:pointer;font-weight:600;}
 .sync-botao:hover{background:#dbeafe;}
+.banco-selo{display:inline-block;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;background:#e5e7eb;color:#374151;white-space:nowrap;}
+.banco-selo.boa{background:#dcfce7;color:#166534;}
+.banco-selo.media{background:#fef3c7;color:#92400e;}
+.banco-selo.ruim{background:#fee2e2;color:#991b1b;}
+.banco-selo.verificando,.banco-selo.sem-teste{background:#dbeafe;color:#1d4ed8;}
+.banco-status-card{margin-bottom:18px;padding:20px;}
+.banco-status-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.banco-status-cabecalho h3{font-size:17px;}
+.banco-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0;}
+.banco-status-grid>div{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;}
+.banco-status-grid small{display:block;color:#6b7280;margin-bottom:6px;}
+.banco-status-grid strong{font-size:14px;word-break:break-word;}
+.banco-status-mensagem{font-size:13px;color:#4b5563;margin-bottom:12px;word-break:break-word;}
+.banco-status-ajuda{font-size:12px;color:#6b7280;margin-bottom:12px;}
+#estadoSincronizacao{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 .mobile-menu{
     display:none;
@@ -966,6 +981,7 @@ textarea{
 ========================= */
 
 @media(max-width:1000px){
+    .banco-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     .dashboard-grid{
         grid-template-columns:repeat(2,1fr);
     }
@@ -1007,6 +1023,9 @@ textarea{
     .sync-controles{gap:5px;}
     .sync-botao{padding:7px;}
     .sync-botao span{display:none;}
+    #empresaTopbar{display:none;}
+    .banco-status-grid{grid-template-columns:1fr;}
+    .topbar{height:auto;min-height:70px;gap:8px;flex-wrap:wrap;}
 
     .content{
         padding:15px;
@@ -1155,10 +1174,12 @@ textarea{
     </div>
 
     <div class="sync-controles">
+        <button type="button" class="sync-botao" onclick="abrirConfigurarConexao()" title="Configurar acesso ao JSONBin" aria-label="Configurar conexão JSONBin">⚙ <span>Conexão</span></button>
         <button type="button" class="sync-botao" onclick="atualizarDaNuvem(true)" title="Buscar dados do JSONBin agora" aria-label="Atualizar dados agora">⟳ <span>Atualizar</span></button>
         <button type="button" id="resolverConflitoBotao" class="sync-botao" onclick="abrirResolucaoConflito()" style="display:none;color:#b91c1c;border-color:#fecaca;" title="Resolver alterações diferentes entre dispositivos">⚠ <span>Resolver</span></button>
         <div style="text-align:right;font-size:13px;">
             <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
+            <span id="bancoSeloTopo" class="banco-selo">● Ainda não testada</span>
             <small id="estadoSincronizacao" role="status" style="color:#6b7280;">Aguardando acesso</small>
         </div>
     </div>
@@ -1177,6 +1198,25 @@ textarea{
         <div>
             <h1>Dashboard</h1>
             <p>Visão geral do sistema</p>
+        </div>
+    </div>
+
+    <div class="card banco-status-card" id="painelBanco">
+        <div class="banco-status-cabecalho">
+            <h3>☁️ Conexão com o banco de dados</h3>
+            <span id="bancoSeloPainel" class="banco-selo">● Ainda não testada</span>
+        </div>
+        <div class="banco-status-grid">
+            <div><small>Qualidade da conexão</small><strong id="bancoLatencia">Aguardando teste</strong></div>
+            <div><small>Leitura do JSONBin</small><strong id="bancoUltimaLeitura">Ainda não verificada</strong></div>
+            <div><small>Última gravação deste aparelho</small><strong id="bancoUltimaGravacao">Ainda não confirmada</strong></div>
+            <div><small>Alterações neste aparelho</small><strong id="bancoPendencias">Nenhuma pendente</strong></div>
+        </div>
+        <p class="banco-status-mensagem" id="bancoMensagem" role="status">Entre no sistema para verificar a conexão.</p>
+        <p class="banco-status-ajuda">Qualidade estimada pelo tempo da última leitura do JSONBin: boa até 800 ms, média até 2,5 s, ruim acima disso ou quando a operação falhar.</p>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="atualizarDaNuvem(true)">⟳ Verificar conexão agora</button>
+            <button type="button" class="btn btn-secondary" onclick="abrirConfigurarConexao()">⚙ Configurar conexão</button>
         </div>
     </div>
 
@@ -1751,7 +1791,12 @@ function entrarNoSistema(event){
     esconderPreloader();
     atualizarTudo();
     iniciarAtualizacaoAutomatica();
-    carregarDadosDaNuvem();
+    if(conexaoJSONBin.chave){
+        carregarDadosDaNuvem();
+    }else{
+        estadoSincronizacao("Configure o acesso ao JSONBin",true);
+        abrirConfigurarConexao();
+    }
 }
 
 /* =====================================================
@@ -1792,8 +1837,7 @@ if(!config.termo){
    BANCO DE DADOS - JSONBIN.IO (COM MASTER KEY)
 ===================================================== */
 const BIN_ID = "6aadca2bac6210605ade2bac";
-const MASTER_KEY = "$2a$10$M9gQSUIKghpH1FLZ0Y6W6uvOShBm5wduuGhn5R/U7BvCsnHkbPp4q";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const JSONBIN_API_BASE = "https://api.jsonbin.io/v3/b";
 
 let filaSalvamento = null;
 let atualizacaoEmAndamento = null;
@@ -1810,7 +1854,104 @@ const VERSAO_BANCO = 2;
 const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
 const AUSENTE = Symbol("campo ausente");
 
-function estadoSincronizacao(mensagem, erro=false){
+function carregarConexaoLocal(){
+    try{
+        const salvo=JSON.parse(localStorage.getItem("loc_jsonbin_conexao") || "{}");
+        return {
+            binId:typeof salvo.binId==="string" && salvo.binId ? salvo.binId : BIN_ID,
+            tipoChave:salvo.tipoChave==="master" ? "master" : "access",
+            chave:typeof salvo.chave==="string" ? salvo.chave : ""
+        };
+    }catch(_erro){
+        return {binId:BIN_ID,tipoChave:"access",chave:""};
+    }
+}
+
+let conexaoJSONBin=carregarConexaoLocal();
+function ultimaGravacaoDesteBin(){
+    try{
+        const salvo=JSON.parse(localStorage.getItem("loc_ultimo_put") || "null");
+        return salvo?.binId===conexaoJSONBin.binId && !isNaN(Date.parse(salvo.em)) ? salvo.em : null;
+    }catch(_erro){return null;}
+}
+
+let bancoEstado={
+    fase:"aguardando",mensagem:"Entre no sistema para verificar a conexão.",
+    qualidade:"aguardando",latencia:null,ultimaLeitura:null,ultimaGravacao:ultimaGravacaoDesteBin()
+};
+
+function tempoDeRespostaAgora(){
+    return typeof performance!=="undefined" && typeof performance.now==="function" ? performance.now() : Date.now();
+}
+
+function horarioBanco(data){
+    return new Date(data).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+}
+
+function atualizarIndicadorBanco(){
+    const antiga=bancoEstado.ultimaLeitura && Date.now()-Date.parse(bancoEstado.ultimaLeitura)>3*INTERVALO_ATUALIZACAO;
+    const qualidade=bancoEstado.qualidade;
+    const rotulos={boa:"● Conexão boa (OK)",media:"● Conexão média",ruim:"● Conexão ruim"};
+    const verificando=qualidade==="aguardando" && bancoEstado.fase==="verificando";
+    const classe=bancoEstado.fase==="erro" ? "ruim" : antiga ? "sem-teste" :
+        rotulos[qualidade] ? qualidade : verificando ? "verificando" : "sem-teste";
+    const rotulo=classe==="sem-teste" ? antiga ? "● Sem teste recente" : "● Ainda não testada" :
+        classe==="verificando" ? "◌ Testando conexão" : rotulos[classe];
+    for(const id of ["bancoSeloTopo","bancoSeloPainel"]){
+        const selo=document.getElementById(id);
+        if(selo){
+            selo.className=`banco-selo ${classe}`;
+            selo.textContent=rotulo;
+        }
+    }
+    const latencia=document.getElementById("bancoLatencia");
+    if(latencia) latencia.textContent=qualidade==="ruim" && bancoEstado.latencia===null ?
+        "Falha na última tentativa" : bancoEstado.latencia===null ? "Aguardando teste" :
+        `${{boa:"Boa",media:"Média",ruim:"Ruim"}[qualidade]} · ${bancoEstado.latencia} ms${antiga ? " (teste antigo)" : ""}`;
+    const leitura=document.getElementById("bancoUltimaLeitura");
+    if(leitura) leitura.textContent=bancoEstado.ultimaLeitura ?
+        `✓ GET confirmado em ${horarioBanco(bancoEstado.ultimaLeitura)}` : "Ainda não verificada nesta sessão";
+    const gravacao=document.getElementById("bancoUltimaGravacao");
+    if(gravacao) gravacao.textContent=bancoEstado.ultimaGravacao ?
+        `✓ PUT confirmado em ${horarioBanco(bancoEstado.ultimaGravacao)}` : "Ainda não confirmada";
+    const pendencias=document.getElementById("bancoPendencias");
+    if(pendencias) pendencias.textContent=localStorage.getItem("loc_sync_pending")==="1" ?
+        "Há alterações para enviar" : "Nenhuma pendente";
+    const mensagem=document.getElementById("bancoMensagem");
+    if(mensagem) mensagem.textContent=bancoEstado.mensagem;
+}
+
+function registrarLeituraConfirmada(latencia){
+    bancoEstado.ultimaLeitura=new Date().toISOString();
+    bancoEstado.latencia=Math.max(0,Math.round(latencia));
+    bancoEstado.qualidade=bancoEstado.latencia<=800 ? "boa" : bancoEstado.latencia<=2500 ? "media" : "ruim";
+    atualizarIndicadorBanco();
+}
+
+function registrarGravacaoConfirmada(){
+    bancoEstado.ultimaGravacao=new Date().toISOString();
+    try{
+        localStorage.setItem("loc_ultimo_put",JSON.stringify({binId:conexaoJSONBin.binId,em:bancoEstado.ultimaGravacao}));
+    }catch(erro){console.warn("Não foi possível guardar o horário da gravação neste navegador.",erro);}
+    atualizarIndicadorBanco();
+}
+
+function enderecoJSONBin(conexao=conexaoJSONBin){
+    return `${JSONBIN_API_BASE}/${encodeURIComponent(conexao.binId)}`;
+}
+
+function cabecalhoJSONBin(conexao=conexaoJSONBin){
+    if(!conexao.chave) throw new Error("Configure a chave do JSONBin em Conexão.");
+    return {[conexao.tipoChave==="master" ? "X-Master-Key" : "X-Access-Key"]:conexao.chave};
+}
+
+function estadoSincronizacao(mensagem, erro=false, fase=erro ? "erro" : "verificando"){
+    bancoEstado.fase=fase;
+    bancoEstado.mensagem=mensagem;
+    if(erro && fase==="erro"){
+        bancoEstado.qualidade="ruim";
+        bancoEstado.latencia=null;
+    }
     const campo=document.getElementById("estadoSincronizacao");
     if(campo){
         campo.textContent=mensagem;
@@ -1819,6 +1960,7 @@ function estadoSincronizacao(mensagem, erro=false){
     }
     const resolver=document.getElementById("resolverConflitoBotao");
     if(resolver) resolver.style.display=conflitoPendente ? "inline-block" : "none";
+    atualizarIndicadorBanco();
 }
 
 function dadosAtuais(){
@@ -1879,40 +2021,45 @@ function baseSincronizada(){
 
 function descreverErro(erro){
     const codigo=erro?.status;
-    if(codigo && erro.detalhe) return `JSONBin HTTP ${codigo}: ${erro.detalhe}`;
-    if(codigo===401 || codigo===403) return `JSONBin HTTP ${codigo}: chave sem acesso a este banco.`;
-    if(codigo===404) return "JSONBin HTTP 404: confirme o ID do banco no index.";
-    if(codigo===402 || codigo===429) return `JSONBin HTTP ${codigo}: confira o limite de requisições da conta.`;
-    if(codigo===413) return "JSONBin HTTP 413: o banco excedeu o tamanho permitido.";
-    if(codigo) return `JSONBin HTTP ${codigo}: não foi possível sincronizar.`;
+    const etapa=erro?.operacao || "API";
+    if(codigo && erro.detalhe) return `JSONBin ${etapa} HTTP ${codigo}: ${erro.detalhe}`;
+    if(codigo===401 || codigo===403) return `JSONBin ${etapa} HTTP ${codigo}: confira chave, permissões e ID do bin.`;
+    if(codigo===404) return `JSONBin ${etapa} HTTP 404: confira o ID do bin em Conexão.`;
+    if(codigo===402 || codigo===429) return `JSONBin ${etapa} HTTP ${codigo}: confira o limite de requisições da conta.`;
+    if(codigo===413) return `JSONBin ${etapa} HTTP 413: o banco excedeu o tamanho permitido.`;
+    if(codigo) return `JSONBin ${etapa} HTTP ${codigo}: não foi possível sincronizar.`;
     if(erro?.conflito) return erro.message;
     if(erro instanceof TypeError) return "Falha de conexão com o JSONBin. Confira a internet e o navegador.";
     return erro?.message || "Não foi possível sincronizar com o JSONBin.";
 }
 
-async function erroHttp(resposta){
-    const erro=new Error(`JSONBin HTTP ${resposta.status}`);
+async function erroHttp(resposta,operacao,conexao=conexaoJSONBin){
+    const erro=new Error(`JSONBin ${operacao} HTTP ${resposta.status}`);
     erro.status=resposta.status;
+    erro.operacao=operacao;
     try{
         const dados=await resposta.json();
         const detalhe=dados?.message || dados?.error || dados?.detail;
         if(typeof detalhe==="string"){
-            erro.detalhe=detalhe.replaceAll(MASTER_KEY,"[chave]").replaceAll(BIN_ID,"[id]").slice(0,150);
+            erro.detalhe=detalhe.replaceAll(conexao.chave,"[chave]").replaceAll(conexao.binId,"[id]").slice(0,150);
         }
     }catch(_erro){/* Algumas respostas de erro não contêm JSON. */}
     return erro;
 }
 
-async function lerBancoDaNuvem(){
+async function lerBancoDaNuvem(conexao=conexaoJSONBin){
     ultimoAcessoNuvem=Date.now();
-    const resposta=await fetch(JSONBIN_URL+"/latest",{
+    const inicio=tempoDeRespostaAgora();
+    const resposta=await fetch(enderecoJSONBin(conexao)+"/latest",{
         method:"GET",
-        headers:{"X-Master-Key":MASTER_KEY},
+        headers:cabecalhoJSONBin(conexao),
         cache:"no-store"
     });
-    if(!resposta.ok) throw await erroHttp(resposta);
+    if(!resposta.ok) throw await erroHttp(resposta,"GET",conexao);
     const conteudo=await resposta.json();
-    return validarBanco(conteudo?.record ?? conteudo);
+    const banco=validarBanco(conteudo?.record ?? conteudo);
+    if(conexao===conexaoJSONBin) registrarLeituraConfirmada(tempoDeRespostaAgora()-inicio);
+    return banco;
 }
 
 function conflito(caminho){
@@ -2029,12 +2176,16 @@ function agendarNovaTentativa(){
 
 function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
     if(!acessoLiberado || localStorage.getItem("loc_sync_pending")!=="1") return Promise.resolve(false);
+    if(!conexaoJSONBin.chave){
+        estadoSincronizacao("Configure a chave do JSONBin em Conexão.",true);
+        return Promise.resolve(false);
+    }
     if(conflitoPendente && !priorizarLocal){
-        estadoSincronizacao("Conflito entre dispositivos: clique em Resolver.",true);
+        estadoSincronizacao("Conflito entre dispositivos: clique em Resolver.",true,"conflito");
         return Promise.resolve(false);
     }
     if(filaSalvamento) return filaSalvamento;
-    estadoSincronizacao("Enviando alterações...");
+    estadoSincronizacao("Enviando alterações...",false,"enviando");
     filaSalvamento=(async()=>{
         while(localStorage.getItem("loc_sync_pending")==="1"){
             const local=dadosAtuais();
@@ -2045,12 +2196,13 @@ function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
             priorizarLocal=false;
             if(!iguaisBanco(proximo,remoto)){
                 // Versionamento é opcional no JSONBin; usar os cabeçalhos mínimos permite o plano gratuito.
-                const resposta=await fetch(JSONBIN_URL,{
+                const resposta=await fetch(enderecoJSONBin(),{
                     method:"PUT",
-                    headers:{"Content-Type":"application/json","X-Master-Key":MASTER_KEY},
+                    headers:{"Content-Type":"application/json",...cabecalhoJSONBin()},
                     body:JSON.stringify(proximo)
                 });
-                if(!resposta.ok) throw await erroHttp(resposta);
+                if(!resposta.ok) throw await erroHttp(resposta,"PUT");
+                registrarGravacaoConfirmada();
             }
             localStorage.setItem("loc_cloud_base",JSON.stringify(proximo));
             // Inclui edições feitas enquanto a gravação estava em andamento.
@@ -2061,7 +2213,7 @@ function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
                 atrasoTentativa=15000;
                 conflitoPendente=false;
                 localStorage.removeItem("loc_sync_conflict");
-                estadoSincronizacao(`Sincronizado às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`);
+                estadoSincronizacao(`Leitura confirmada; alterações sincronizadas às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}.`,false,"online");
                 return true;
             }
             gravarDadosLocais(dadosFinais);
@@ -2070,10 +2222,9 @@ function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
     })().catch(erro=>{
         console.error("Falha na sincronização; dados locais preservados.",erro);
         const mensagem=descreverErro(erro);
-        estadoSincronizacao(mensagem,true);
         conflitoPendente=Boolean(erro.conflito);
         if(conflitoPendente) localStorage.setItem("loc_sync_conflict","1");
-        estadoSincronizacao(mensagem,true);
+        estadoSincronizacao(mensagem,true,conflitoPendente ? "conflito" : "erro");
         mostrarToast(mensagem);
         if(!conflitoPendente && ![400,401,402,403,404,413,422].includes(erro.status)) agendarNovaTentativa();
         return false;
@@ -2085,8 +2236,93 @@ function salvarDados(){
     gravarDadosLocais(dadosAtuais());
     localStorage.setItem("loc_sync_pending","1");
     versaoLocal++;
-    estadoSincronizacao(conflitoPendente ? "Conflito: faça backup e clique em Resolver." : "Alterações salvas; enviando...",conflitoPendente);
+    estadoSincronizacao(conflitoPendente ? "Conflito: faça backup e clique em Resolver." : "Alterações salvas; enviando...",conflitoPendente,conflitoPendente ? "conflito" : "pendente");
     return sincronizarPendencias();
+}
+
+function abrirConfigurarConexao(){
+    abrirModal("Conexão com o JSONBin",`
+        <p class="info-box">Use o ID do bin que contém os seus clientes e uma chave da mesma conta. A Access Key precisa de permissões de leitura e atualização. A chave ficará salva somente neste navegador.</p>
+        <div class="form-grid">
+            <div class="form-group full">
+                <label for="conexaoBinId">ID do bin *</label>
+                <input id="conexaoBinId" value="${escapeHtml(conexaoJSONBin.binId)}" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="form-group">
+                <label for="conexaoTipo">Tipo de chave *</label>
+                <select id="conexaoTipo">
+                    <option value="access">Access Key (recomendada)</option>
+                    <option value="master">Master Key</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="conexaoChave">Chave da API ${conexaoJSONBin.chave ? "(deixe vazio para manter a atual)" : "*"}</label>
+                <input id="conexaoChave" type="password" autocomplete="new-password" placeholder="Cole aqui; não envie esta chave pelo chat">
+            </div>
+        </div>
+        <p id="conexaoMensagem" role="alert" style="color:#b91c1c;margin:12px 0;"></p>
+        <div class="form-actions">
+            <button class="btn btn-secondary" type="button" onclick="fecharModal()">Fechar</button>
+            <button class="btn btn-primary" type="button" id="conexaoSalvar" onclick="salvarConexaoJSONBin()">Testar e salvar conexão</button>
+        </div>
+    `);
+    document.getElementById("conexaoTipo").value=conexaoJSONBin.tipoChave;
+}
+
+async function salvarConexaoJSONBin(){
+    const binId=document.getElementById("conexaoBinId")?.value.trim();
+    const tipoChave=document.getElementById("conexaoTipo")?.value;
+    const chave=document.getElementById("conexaoChave")?.value.trim() || conexaoJSONBin.chave;
+    const mensagem=document.getElementById("conexaoMensagem");
+    const botao=document.getElementById("conexaoSalvar");
+    if(!/^[a-f0-9]{24}$/i.test(binId || "") || !["access","master"].includes(tipoChave) || !chave){
+        mensagem.textContent="Informe o ID de 24 caracteres, o tipo e a chave do JSONBin.";
+        return false;
+    }
+    const proposta={binId,tipoChave,chave};
+    botao.disabled=true;
+    mensagem.textContent="Verificando permissão de leitura...";
+    try{
+        const inicio=tempoDeRespostaAgora();
+        const remoto=await lerBancoDaNuvem(proposta);
+        const latencia=tempoDeRespostaAgora()-inicio;
+        if(filaSalvamento) await filaSalvamento;
+        const mudouBin=conexaoJSONBin.binId!==binId;
+        conexaoJSONBin=proposta;
+        localStorage.setItem("loc_jsonbin_conexao",JSON.stringify(proposta));
+        bancoEstado.ultimaLeitura=null;
+        bancoEstado.ultimaGravacao=ultimaGravacaoDesteBin();
+        registrarLeituraConfirmada(latencia);
+        if(mudouBin){
+            localStorage.removeItem("loc_cloud_base");
+            if(localStorage.getItem("loc_sync_pending")==="1"){
+                conflitoPendente=true;
+                localStorage.setItem("loc_sync_conflict","1");
+            }
+        }
+        fecharModal();
+        if(localStorage.getItem("loc_sync_pending")==="1"){
+            if(conflitoPendente){
+                estadoSincronizacao("Conflito: confira os dados antes de trocar de bin.",true,"conflito");
+            }else{
+                sincronizarPendencias();
+            }
+        }else{
+            localStorage.setItem("loc_cloud_base",JSON.stringify(remoto));
+            aplicarBanco(remoto);
+            estadoSincronizacao("Leitura do JSONBin confirmada. A gravação é confirmada após um envio.",false,"online");
+            if(corrigirDisponibilidade() || Number(remoto.schemaVersion || 0)<VERSAO_BANCO) salvarDados();
+        }
+        mostrarToast("Leitura do JSONBin confirmada. Conexão salva neste navegador.");
+        return true;
+    }catch(erro){
+        const texto=descreverErro(erro);
+        mensagem.textContent=texto;
+        estadoSincronizacao(texto,true);
+        return false;
+    }finally{
+        if(document.getElementById("conexaoSalvar")) botao.disabled=false;
+    }
 }
 
 function abrirResolucaoConflito(){
@@ -2131,14 +2367,20 @@ async function resolverConflito(){
 
 async function atualizarDaNuvem(manual=false){
     if(!acessoLiberado) return false;
+    if(!conexaoJSONBin.chave){
+        estadoSincronizacao("Configure a chave do JSONBin em Conexão.",true);
+        return false;
+    }
     if(filaSalvamento) return filaSalvamento;
     if(localStorage.getItem("loc_sync_pending")==="1") return sincronizarPendencias();
     if(atualizacaoEmAndamento) return atualizacaoEmAndamento;
-    estadoSincronizacao("Buscando atualizações...");
+    estadoSincronizacao("Buscando atualizações...",false,"verificando");
     const versao=versaoLocal;
+    const conexaoDaBusca=conexaoJSONBin;
     atualizacaoEmAndamento=(async()=>{
         try{
-            const remoto=await lerBancoDaNuvem();
+            const remoto=await lerBancoDaNuvem(conexaoDaBusca);
+            if(conexaoDaBusca!==conexaoJSONBin) return false;
             if(versao!==versaoLocal || localStorage.getItem("loc_sync_pending")==="1"){
                 return sincronizarPendencias();
             }
@@ -2148,7 +2390,7 @@ async function atualizarDaNuvem(manual=false){
                 locacoes:remoto.locacoes,contratos:remoto.contratos,config:remoto.config
             });
             aplicarBanco(remoto);
-            estadoSincronizacao(`Sincronizado às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`);
+            estadoSincronizacao(`Leitura do JSONBin confirmada às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}. A gravação é confirmada após um envio.`,false,"online");
             const corrigiu=corrigirDisponibilidade();
             if(corrigiu || Number(remoto.schemaVersion || 0)<VERSAO_BANCO){
                 salvarDados(); // Migração em segundo plano, sem atrasar a abertura da tela.
@@ -2157,6 +2399,7 @@ async function atualizarDaNuvem(manual=false){
             }
             return true;
         }catch(erro){
+            if(conexaoDaBusca!==conexaoJSONBin) return false;
             console.error("Falha ao buscar atualizações do JSONBin.",erro);
             const mensagem=descreverErro(erro);
             estadoSincronizacao(mensagem,true);
@@ -2178,6 +2421,7 @@ function iniciarAtualizacaoAutomatica(){
     atualizacaoAutomaticaIniciada=true;
     // Polling contido para não consumir rapidamente o limite de requisições do JSONBin.
     setInterval(()=>{
+        atualizarIndicadorBanco();
         if(document.visibilityState==="hidden") return;
         if(Date.now()-ultimaInteracao>5*60000) return;
         if(Date.now()-ultimoAcessoNuvem>=INTERVALO_ATUALIZACAO) atualizarDaNuvem();
