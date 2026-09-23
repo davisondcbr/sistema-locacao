@@ -704,7 +704,7 @@ textarea{
 .locacao-item{border:1px solid #dbe3ef;border-radius:12px;background:#f8fafc;padding:14px;}
 .locacao-item-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
 .locacao-item-cabecalho strong{font-size:14px;color:#1f2937;}
-.locacao-item-grid{display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:10px;align-items:end;}
+.locacao-item-grid{display:grid;grid-template-columns:repeat(8,minmax(95px,1fr));gap:10px;align-items:end;}
 .locacao-item-grid .campo-ferramenta{grid-column:span 2;}
 .locacao-item-grid label{font-size:11px;}
 .locacao-item-resumo{display:block;margin-top:10px;color:#6b7280;font-size:12px;line-height:1.4;}
@@ -895,11 +895,12 @@ textarea{
 .contrato-tabela th{background:#1e3a8a!important;color:#fff!important;text-align:left;padding:6px 5px;font-size:8px;text-transform:uppercase;letter-spacing:.25px;}
 .contrato-tabela td{border:1px solid #dbe3ef;padding:6px 5px;vertical-align:top;word-break:break-word;}
 .contrato-tabela tbody tr:nth-child(even){background:#f8fafc!important;}
-.contrato-tabela .col-num{width:5%;text-align:center;}
-.contrato-tabela .col-equip{width:27%;}
+.contrato-tabela .col-num{width:4%;text-align:center;}
+.contrato-tabela .col-equip{width:25%;}
+.contrato-tabela .col-qtd{width:6%;text-align:center;}
 .contrato-tabela .col-cobranca{width:13%;}
-.contrato-tabela .col-periodo{width:12%;}
-.contrato-tabela .col-devolucao{width:14%;}
+.contrato-tabela .col-periodo{width:15%;}
+.contrato-tabela .col-devolucao{width:17%;}
 .contrato-tabela .col-valor{width:15%;text-align:right;}
 .contrato-tabela small{display:block;color:#64748b;font-size:8px;margin-top:2px;}
 .contrato-resumo{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:var(--doc-espaco) 0;}
@@ -1415,6 +1416,7 @@ textarea{
                         <th>Nome</th>
                         <th>Código</th>
                         <th>Voltagem</th>
+                        <th>Estoque</th>
                         <th>Diária</th>
                         <th>Semanal</th>
                         <th>Mensal</th>
@@ -1874,7 +1876,7 @@ let temporizadorTentativa = null;
 let atrasoTentativa = 15000;
 let conflitoPendente = localStorage.getItem("loc_sync_conflict")==="1";
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
-const VERSAO_BANCO = 3;
+const VERSAO_BANCO = 4;
 const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
 const AUSENTE = Symbol("campo ausente");
 
@@ -2176,17 +2178,60 @@ function aplicarBanco(dados){
     if(mudou) atualizarTudo();
 }
 
+function estoqueTotalFerramenta(ferramenta){
+    const quantidade=Number(ferramenta?.quantidadeEstoque);
+    return Number.isInteger(quantidade) && quantidade>0 ? quantidade : 1;
+}
+
+function quantidadeItemLocacao(item){
+    const quantidade=Number(item?.quantidade);
+    return Number.isInteger(quantidade) && quantidade>0 ? quantidade : 1;
+}
+
+function quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId=""){
+    return locacoes.filter(locacao=>locacao.id!==ignorarLocacaoId && locacao.status==="Ativa")
+        .reduce((total,locacao)=>total+itensDaLocacao(locacao)
+            .filter(item=>item.ferramentaId===ferramentaId)
+            .reduce((soma,item)=>soma+quantidadeItemLocacao(item),0),0);
+}
+
+function estoqueDisponivelFerramenta(ferramentaId,ignorarLocacaoId=""){
+    const ferramenta=ferramentas.find(item=>item.id===ferramentaId);
+    return ferramenta ? Math.max(0,estoqueTotalFerramenta(ferramenta)-quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId)) : 0;
+}
+
+function totalUnidadesLocacao(locacao){
+    return itensDaLocacao(locacao).reduce((total,item)=>total+quantidadeItemLocacao(item),0);
+}
+
+function ferramentaComUsoBloqueado(ferramenta){
+    return ["Manutenção","Reservada"].includes(ferramenta?.status);
+}
+
 function corrigirDisponibilidade(){
     let corrigiu=false;
-    for(const locacao of locacoes){
-        if(locacao.status!=="Ativa") continue;
-        for(const ferramentaId of idsFerramentasDaLocacao(locacao)){
-            const ferramenta=ferramentas.find(item=>item.id===ferramentaId);
-            if(ferramenta?.status==="Disponível"){
-                ferramenta.status="Alugada";
-                corrigiu=true;
-            }
+    for(const ferramenta of ferramentas){
+        const estoque=estoqueTotalFerramenta(ferramenta);
+        if(ferramenta.quantidadeEstoque!==estoque){
+            ferramenta.quantidadeEstoque=estoque;
+            corrigiu=true;
         }
+    }
+    for(const locacao of locacoes){
+        if(Array.isArray(locacao.itens)){
+            for(const item of locacao.itens){
+                const quantidade=quantidadeItemLocacao(item);
+                if(item.quantidade!==quantidade){item.quantidade=quantidade;corrigiu=true;}
+            }
+        }else if(locacao.ferramentaId){
+            const quantidade=quantidadeItemLocacao(locacao);
+            if(locacao.quantidade!==quantidade){locacao.quantidade=quantidade;corrigiu=true;}
+        }
+    }
+    for(const ferramenta of ferramentas){
+        if(ferramentaComUsoBloqueado(ferramenta)) continue;
+        const status=quantidadeAlugadaFerramenta(ferramenta.id)>=estoqueTotalFerramenta(ferramenta) ? "Alugada" : "Disponível";
+        if(ferramenta.status!==status){ferramenta.status=status;corrigiu=true;}
     }
     return corrigiu;
 }
@@ -2868,15 +2913,20 @@ function abrirNovaFerramenta(){
                 <input id="ferramentaCategoria" placeholder="Ex.: Construção">
             </div>
             <div class="form-group">
-                <label>Valor diária</label>
+                <label>Quantidade total em estoque *</label>
+                <input id="ferramentaQuantidade" type="number" min="1" step="1" value="1">
+                <small>Ex.: cadastre “Betoneira” uma vez e informe 7 unidades.</small>
+            </div>
+            <div class="form-group">
+                <label>Valor diária por unidade</label>
                 <input id="ferramentaDiaria" type="number" step="0.01" min="0">
             </div>
             <div class="form-group">
-                <label>Valor semanal</label>
+                <label>Valor semanal por unidade</label>
                 <input id="ferramentaSemanal" type="number" step="0.01" min="0">
             </div>
             <div class="form-group">
-                <label>Valor mensal</label>
+                <label>Valor mensal por unidade</label>
                 <input id="ferramentaMensal" type="number" step="0.01" min="0">
             </div>
             <div class="form-group">
@@ -2904,6 +2954,7 @@ function editarFerramenta(id){
     const f = ferramentas.find(x=>x.id===id);
     if(!f) return;
     ferramentaEditando = id;
+    const alugadas=quantidadeAlugadaFerramenta(id);
 
     abrirModal("Editar Ferramenta",`
         <div class="form-grid">
@@ -2930,15 +2981,20 @@ function editarFerramenta(id){
                 <input id="ferramentaCategoria" value="${escapeHtml(f.categoria)}">
             </div>
             <div class="form-group">
-                <label>Valor diária</label>
+                <label>Quantidade total em estoque *</label>
+                <input id="ferramentaQuantidade" type="number" min="${Math.max(1,alugadas)}" step="1" value="${estoqueTotalFerramenta(f)}">
+                <small>${alugadas} unidade(s) atualmente locada(s). O estoque não pode ser menor que esse total.</small>
+            </div>
+            <div class="form-group">
+                <label>Valor diária por unidade</label>
                 <input id="ferramentaDiaria" type="number" step="0.01" value="${f.diaria || 0}">
             </div>
             <div class="form-group">
-                <label>Valor semanal</label>
+                <label>Valor semanal por unidade</label>
                 <input id="ferramentaSemanal" type="number" step="0.01" value="${f.semanal || 0}">
             </div>
             <div class="form-group">
-                <label>Valor mensal</label>
+                <label>Valor mensal por unidade</label>
                 <input id="ferramentaMensal" type="number" step="0.01" value="${f.mensal || 0}">
             </div>
             <div class="form-group">
@@ -2965,9 +3021,15 @@ function editarFerramenta(id){
 function salvarFerramenta(){
     const nome = document.getElementById("ferramentaNome").value.trim();
     const codigo = document.getElementById("ferramentaCodigo").value.trim();
+    const quantidadeEstoque=Number(document.getElementById("ferramentaQuantidade").value);
 
-    if(!nome || !codigo){
-        mostrarToast("Nome e código são obrigatórios.");
+    if(!nome || !codigo || !Number.isInteger(quantidadeEstoque) || quantidadeEstoque<1){
+        mostrarToast("Informe nome, código e uma quantidade de estoque válida.");
+        return;
+    }
+    const alugadas=ferramentaEditando ? quantidadeAlugadaFerramenta(ferramentaEditando) : 0;
+    if(quantidadeEstoque<alugadas){
+        mostrarToast(`Existem ${alugadas} unidade(s) locada(s). O estoque não pode ser menor que isso.`);
         return;
     }
 
@@ -2979,6 +3041,7 @@ function salvarFerramenta(){
         diaria:Number(document.getElementById("ferramentaDiaria").value || 0),
         semanal:Number(document.getElementById("ferramentaSemanal").value || 0),
         mensal:Number(document.getElementById("ferramentaMensal").value || 0),
+        quantidadeEstoque,
         status:document.getElementById("ferramentaStatus").value,
         observacoes:document.getElementById("ferramentaObservacoes").value.trim()
     };
@@ -2992,6 +3055,7 @@ function salvarFerramenta(){
         ferramentas.push({ id:gerarId(), ...dados, criadoEm:new Date().toISOString() });
     }
 
+    corrigirDisponibilidade();
     salvarDados();
     fecharModal();
     renderFerramentas();
@@ -3041,29 +3105,35 @@ function renderFerramentas(){
     if(!lista.length){
         tbody.innerHTML=`
             <tr>
-                <td colspan="8" class="empty">Nenhuma ferramenta cadastrada.</td>
+                <td colspan="9" class="empty">Nenhuma ferramenta cadastrada.</td>
             </tr>
         `;
         return;
     }
 
-    tbody.innerHTML=lista.map(f=>`
-        <tr>
-            <td><strong>${escapeHtml(f.nome)}</strong></td>
-            <td>${escapeHtml(f.codigo)}</td>
-            <td>${escapeHtml(f.voltagem || "-")}</td>
-            <td>${formatarMoeda(f.diaria)}</td>
-            <td>${formatarMoeda(f.semanal)}</td>
-            <td>${formatarMoeda(f.mensal)}</td>
-            <td>${badgeStatusFerramenta(f.status)}</td>
-            <td>
-                <div class="actions">
-                    <button class="btn btn-secondary btn-sm" onclick="editarFerramenta('${f.id}')">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="excluirFerramenta('${f.id}')">Excluir</button>
-                </div>
-            </td>
-        </tr>
-    `).join("");
+    tbody.innerHTML=lista.map(f=>{
+        const total=estoqueTotalFerramenta(f);
+        const alugadas=quantidadeAlugadaFerramenta(f.id);
+        const livres=Math.max(0,total-alugadas);
+        return `
+            <tr>
+                <td><strong>${escapeHtml(f.nome)}</strong></td>
+                <td>${escapeHtml(f.codigo)}</td>
+                <td>${escapeHtml(f.voltagem || "-")}</td>
+                <td><strong>${livres}/${total} livres</strong><br><small>${alugadas} locada(s)</small></td>
+                <td>${formatarMoeda(f.diaria)}</td>
+                <td>${formatarMoeda(f.semanal)}</td>
+                <td>${formatarMoeda(f.mensal)}</td>
+                <td>${badgeStatusFerramenta(f.status)}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editarFerramenta('${f.id}')">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirFerramenta('${f.id}')">Excluir</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
 }
 
 
@@ -3114,6 +3184,7 @@ function normalizarItemLocacao(item,locacao){
     const tipo=item?.tipoCobranca || locacao?.tipoCobranca || "personalizado";
     const retirada=locacao?.retirada || dataHoje();
     const devolucao=item?.devolucao || locacao?.devolucao || retirada;
+    const quantidade=quantidadeItemLocacao(item || locacao);
     const periodos=Number(item?.periodosContratados || locacao?.periodosContratados ||
         (TIPOS_PERIODICOS.includes(tipo) ? periodosEntreDatas(retirada,devolucao,tipo) : 1));
     const renovacoes=Math.max(0,Number(item?.renovacoes ?? locacao?.renovacoes ?? 0));
@@ -3121,11 +3192,12 @@ function normalizarItemLocacao(item,locacao){
     const taxaSalva=Number(item?.valorPeriodo ?? locacao?.valorPeriodo ?? 0);
     const valorInicialSalvo=Number(item?.valorInicial ?? locacao?.valorInicial ?? 0);
     const valorInicial=valorInicialSalvo>0 ? valorInicialSalvo :
-        renovacoes>0 && taxaSalva>0 ? Math.max(0,valor-renovacoes*taxaSalva) : valor;
-    const taxa=taxaSalva>0 ? taxaSalva : periodos>0 ? arredondarValor(valorInicial/periodos) : valorInicial;
+        renovacoes>0 && taxaSalva>0 ? Math.max(0,valor-renovacoes*taxaSalva*quantidade) : valor;
+    const taxa=taxaSalva>0 ? taxaSalva : periodos>0 ? arredondarValor(valorInicial/(periodos*quantidade)) : valorInicial;
     return {
         id:item?.id || `item-${locacao?.id || gerarId()}`,
         ferramentaId:item?.ferramentaId || locacao?.ferramentaId || "",
+        quantidade,
         tipoCobranca:tipo,
         periodosContratados:Number.isInteger(periodos) && periodos>0 ? periodos : 1,
         valorPeriodo:taxa,
@@ -3154,9 +3226,11 @@ function locacaoUsaFerramenta(locacao,ferramentaId){
 }
 
 function nomesFerramentasLocacao(locacao,limite=0){
-    const nomes=idsFerramentasDaLocacao(locacao).map(id=>{
-        const f=ferramentas.find(item=>item.id===id);
-        return f ? `${f.nome}${f.codigo ? ` (${f.codigo})` : ""}` : "Ferramenta não localizada";
+    const nomes=itensDaLocacao(locacao).map(item=>{
+        const f=ferramentas.find(ferramenta=>ferramenta.id===item.ferramentaId);
+        const quantidade=quantidadeItemLocacao(item);
+        const prefixo=quantidade>1 ? `${quantidade}× ` : "";
+        return f ? `${prefixo}${f.nome}${f.codigo ? ` (${f.codigo})` : ""}` : `${prefixo}Ferramenta não localizada`;
     });
     if(limite>0 && nomes.length>limite) return `${nomes.slice(0,limite).join(", ")} e mais ${nomes.length-limite}`;
     return nomes.join(", ") || "-";
@@ -3180,7 +3254,8 @@ function sincronizarResumoItens(locacao){
     locacao.devolucaoOriginal=maiorDataItens(itens,"devolucaoOriginal");
     locacao.periodosContratados=tipos.length===1 && itens.every(item=>item.periodosContratados===itens[0].periodosContratados)
         ? itens[0].periodosContratados : null;
-    locacao.valorPeriodo=tipos.length===1 ? arredondarValor(itens.reduce((s,item)=>s+Number(item.valorPeriodo || 0),0)) : null;
+    locacao.valorPeriodo=tipos.length===1 ? arredondarValor(itens.reduce((s,item)=>
+        s+Number(item.valorPeriodo || 0)*quantidadeItemLocacao(item),0)) : null;
     return locacao;
 }
 
@@ -3197,7 +3272,7 @@ function renovarItemLocacao(item,retirada,hoje){
     }
     if(!vencimento) return false;
     const renovacoes=periodos-inicial;
-    const valor=arredondarValor(valorInicial+renovacoes*taxa);
+    const valor=arredondarValor(valorInicial+renovacoes*taxa*quantidadeItemLocacao(item));
     const mudou=item.devolucao!==vencimento || Number(item.valor)!==valor || Number(item.renovacoes || 0)!==renovacoes;
     Object.assign(item,{devolucao:vencimento,valor,renovacoes});
     return mudou;
@@ -3230,10 +3305,24 @@ function renovarLocacoesVencidas(lista=locacoes,hoje=dataHoje()){
     return alteradas;
 }
 
+function limiteEstoqueParaLocacao(ferramentaId,atual=null){
+    const ferramenta=ferramentas.find(item=>item.id===ferramentaId);
+    if(!ferramenta) return 0;
+    if(atual?.status==="Finalizada") return estoqueTotalFerramenta(ferramenta);
+    return estoqueDisponivelFerramenta(ferramentaId,atual?.status==="Ativa" ? atual.id : "");
+}
+
 function opcoesFerramentasLocacao(selecionado="",atual=null){
     const anteriores=new Set(idsFerramentasDaLocacao(atual));
-    return ferramentas.filter(f=>atual?.status==="Finalizada" || f.status==="Disponível" || anteriores.has(f.id) || f.id===selecionado)
-        .map(f=>`<option value="${escapeHtml(f.id)}" ${f.id===selecionado ? "selected" : ""}>${escapeHtml(f.nome)} — ${escapeHtml(f.codigo || "sem código")}</option>`).join("");
+    return ferramentas.filter(f=>atual?.status==="Finalizada" || anteriores.has(f.id) || f.id===selecionado ||
+        (!ferramentaComUsoBloqueado(f) && limiteEstoqueParaLocacao(f.id,atual)>0))
+        .map(f=>{
+            const total=estoqueTotalFerramenta(f);
+            const livres=limiteEstoqueParaLocacao(f.id,atual);
+            const estoqueTexto=atual?.status==="Finalizada" ? `estoque cadastrado: ${total}` :
+                atual?.status==="Ativa" ? `até ${livres}/${total} nesta locação` : `${livres}/${total} livre(s)`;
+            return `<option value="${escapeHtml(f.id)}" ${f.id===selecionado ? "selected" : ""}>${escapeHtml(f.nome)} — ${escapeHtml(f.codigo || "sem código")} · ${estoqueTexto}</option>`;
+        }).join("");
 }
 
 function referenciaCalculoLocacao(locacaoAtual=null){
@@ -3278,7 +3367,7 @@ function adicionarItemLocacao(dados={}){
     const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
     const item=normalizarItemLocacao(dados,atual || {retirada:document.getElementById("locacaoRetirada")?.value || dataHoje()});
     if(!dados.ferramentaId){
-        Object.assign(item,{id:gerarId(),ferramentaId:"",tipoCobranca:"diaria",periodosContratados:1,
+        Object.assign(item,{id:gerarId(),ferramentaId:"",quantidade:1,tipoCobranca:"diaria",periodosContratados:1,
             valorPeriodo:0,valorInicial:0,valor:0,devolucao:"",devolucaoOriginal:"",
             renovacaoAutomatica:true,renovacoes:0,legado:false});
     }
@@ -3298,6 +3387,10 @@ function adicionarItemLocacao(dados={}){
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Quantidade *</label>
+                    <input id="itemQuantidade_${chave}" type="number" min="1" step="1" value="${quantidadeItemLocacao(item)}" oninput="recalcularItemAlterado('${chave}')">
+                </div>
+                <div class="form-group">
                     <label>Cobrança *</label>
                     <select id="itemTipo_${chave}" onchange="recalcularItemAlterado('${chave}',true)">
                         ${[["diaria","Diária"],["semanal","Semanal"],["mensal","Mensal"],["personalizado","Personalizado"]].map(([valor,nome])=>`<option value="${valor}" ${item.tipoCobranca===valor ? "selected" : ""}>${nome}</option>`).join("")}
@@ -3308,7 +3401,7 @@ function adicionarItemLocacao(dados={}){
                     <input id="itemPeriodos_${chave}" type="number" min="1" max="3650" step="1" value="${item.periodosContratados || 1}" oninput="recalcularItemAlterado('${chave}')">
                 </div>
                 <div class="form-group">
-                    <label>Tarifa do contrato</label>
+                    <label>Tarifa por unidade</label>
                     <input id="itemTarifa_${chave}" type="number" min="0" step="0.01" value="${Number(item.valorPeriodo || 0).toFixed(2)}" oninput="recalcularItemAlterado('${chave}')">
                 </div>
                 <div class="form-group">
@@ -3353,6 +3446,8 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     const linha=document.getElementById(`locacaoItem_${chave}`);
     if(!linha) return;
     const ferramentaId=document.getElementById(`itemFerramenta_${chave}`).value;
+    const quantidadeCampo=document.getElementById(`itemQuantidade_${chave}`);
+    const quantidade=Number(quantidadeCampo.value || 0);
     const tipo=document.getElementById(`itemTipo_${chave}`).value;
     const periodosCampo=document.getElementById(`itemPeriodos_${chave}`);
     const tarifaCampo=document.getElementById(`itemTarifa_${chave}`);
@@ -3364,6 +3459,9 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     const retirada=document.getElementById("locacaoRetirada")?.value;
     const original=itensOriginaisLocacao.get(chave);
     const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
+    const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
+    const limite=ferramenta ? limiteEstoqueParaLocacao(ferramentaId,atual) : 0;
+    quantidadeCampo.max=String(Math.max(1,limite));
     const periodico=TIPOS_PERIODICOS.includes(tipo);
     grupoPeriodos.hidden=!periodico;
     auto.disabled=!periodico;
@@ -3374,11 +3472,12 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     if(!recalcular && original?.ferramentaId && linha.dataset.recalcular!=="1"){
         if(periodico){
             resumo.textContent=Number(original.renovacoes || 0)>0
-                ? `Registro salvo com ${Number(original.renovacoes)} renovação(ões). Você pode corrigir os campos; os cálculos serão refeitos somente se alterar ferramenta, cobrança, períodos ou retirada.`
-                : `${Number(original.periodosContratados || 1)} período(s) salvos. Você pode corrigir qualquer informação deste item.`;
+                ? `${quantidadeItemLocacao(original)} unidade(s), com ${Number(original.renovacoes)} renovação(ões). Você pode corrigir os campos; os cálculos serão refeitos ao alterar quantidade, ferramenta, cobrança, períodos ou retirada.`
+                : `${quantidadeItemLocacao(original)} unidade(s) × ${Number(original.periodosContratados || 1)} período(s) salvos. Você pode corrigir qualquer informação deste item.`;
         }else{
-            resumo.textContent="Valor personalizado salvo. Você pode corrigir a devolução e o subtotal.";
+            resumo.textContent=`${quantidadeItemLocacao(original)} unidade(s), com valor personalizado salvo. Você pode corrigir a quantidade, a devolução e o subtotal.`;
         }
+        if(ferramenta) resumo.textContent+=` Estoque permitido nesta locação: ${limite} de ${estoqueTotalFerramenta(ferramenta)}.`;
         atualizarTotalLocacao();
         return;
     }
@@ -3387,7 +3486,7 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
         if(recalcular && original?.tipoCobranca!=="personalizado"){
             devolucaoCampo.value="";valorCampo.value="";
         }
-        resumo.textContent="Informe manualmente a devolução e o subtotal deste item. O valor personalizado não renova automaticamente.";
+        resumo.textContent=`Informe manualmente a devolução e o subtotal total das ${Number.isInteger(quantidade) && quantidade>0 ? quantidade : 0} unidade(s). O valor personalizado não renova automaticamente.${ferramenta ? ` Estoque permitido nesta locação: ${limite} de ${estoqueTotalFerramenta(ferramenta)}.` : ""}`;
         atualizarTotalLocacao();
         return;
     }
@@ -3398,17 +3497,16 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
         tarifaCampo.value=tarifa.toFixed(2);
     }
     const devolucao=fimDoPeriodo(retirada,tipo,periodos);
-    const inicial=arredondarValor(tarifa*periodos);
+    const inicial=arredondarValor(tarifa*periodos*quantidade);
     if(recalcular){
         devolucaoCampo.value=devolucao || "";
         valorCampo.value=tarifa>0 && devolucao ? inicial.toFixed(2) : "";
     }
-    let texto=tarifa>0 && devolucao ? `${periodos} período(s) × ${formatarMoeda(tarifa)}. Vencimento: ${formatarData(devolucao)}.` :
+    let texto=tarifa>0 && devolucao && Number.isInteger(quantidade) && quantidade>0 ? `${quantidade} unidade(s) × ${periodos} período(s) × ${formatarMoeda(tarifa)} por unidade. Vencimento: ${formatarData(devolucao)}.` :
         "Selecione uma ferramenta com preço cadastrado para esta modalidade.";
-    const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
     const referencia=referenciaCalculoLocacao(atual);
-    if(auto.checked && tarifa>0 && devolucao && referencia>devolucao){
-        const simulado={tipoCobranca:tipo,periodosContratados:periodos,valorPeriodo:tarifa,
+    if(auto.checked && tarifa>0 && devolucao && Number.isInteger(quantidade) && quantidade>0 && referencia>devolucao){
+        const simulado={tipoCobranca:tipo,quantidade,periodosContratados:periodos,valorPeriodo:tarifa,
             valorInicial:inicial,valor:inicial,devolucao,devolucaoOriginal:devolucao,
             renovacaoAutomatica:true,renovacoes:0};
         renovarItemLocacao(simulado,retirada,referencia);
@@ -3416,8 +3514,9 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
         devolucaoCampo.value=simulado.devolucao;
         texto+=` Hoje: ${simulado.renovacoes} renovação(ões), subtotal ${formatarMoeda(simulado.valor)}, próxima devolução ${formatarData(simulado.devolucao)}.`;
     }else if(auto.checked){
-        texto+=` Após o vencimento, cada renovação acrescenta ${formatarMoeda(tarifa)}.`;
+        texto+=` Após o vencimento, cada renovação acrescenta ${formatarMoeda(tarifa*quantidade)}.`;
     }
+    if(ferramenta) texto+=` Estoque permitido nesta locação: ${limite} de ${estoqueTotalFerramenta(ferramenta)}.`;
     resumo.textContent=texto;
     atualizarTotalLocacao();
 }
@@ -3471,7 +3570,7 @@ function abrirNovaLocacao(id=null){
             </div>
 
             <div class="form-group full">
-                <div class="info-box">${atual ? "Modo de correção: você pode trocar, adicionar ou remover ferramentas e corrigir cobrança, períodos, retirada e valores. Ao salvar, o mesmo contrato será atualizado e você poderá gerar outro PDF." : "Adicione todas as ferramentas deste cliente. Cada item pode ter cobrança diária, semanal, mensal ou personalizada e uma devolução própria."}</div>
+                <div class="info-box">${atual ? "Modo de correção: você pode trocar, adicionar ou remover ferramentas e corrigir quantidade, cobrança, períodos, retirada e valores. O sistema impede quantidade acima do estoque; ao salvar, o mesmo contrato será atualizado e você poderá gerar outro PDF." : "Adicione os tipos de ferramenta e informe a quantidade de cada um. Cada item pode ter cobrança diária, semanal, mensal ou personalizada; o sistema bloqueia quantidades acima do estoque disponível."}</div>
                 <div class="locacao-itens" id="locacaoItens"></div>
                 <button type="button" class="btn btn-secondary" style="margin-top:12px;" onclick="adicionarItemLocacao()">＋ Adicionar outra ferramenta</button>
             </div>
@@ -3700,6 +3799,7 @@ function coletarItensFormulario(retirada){
     return linhas.map((linha,index)=>{
         const chave=linha.dataset.chave;
         const ferramentaId=document.getElementById(`itemFerramenta_${chave}`).value;
+        const quantidade=Number(document.getElementById(`itemQuantidade_${chave}`).value);
         const tipo=document.getElementById(`itemTipo_${chave}`).value;
         const periodos=Number(document.getElementById(`itemPeriodos_${chave}`).value);
         const taxa=Number(document.getElementById(`itemTarifa_${chave}`).value);
@@ -3709,10 +3809,11 @@ function coletarItensFormulario(retirada){
         const original=itensOriginaisLocacao.get(chave);
         const precisaRecalcular=linha.dataset.recalcular==="1" || !original?.ferramentaId;
         if(!ferramentas.some(f=>f.id===ferramentaId)) throw new Error(`Selecione a ferramenta do item ${index+1}.`);
+        if(!Number.isInteger(quantidade) || quantidade<1) throw new Error(`Informe uma quantidade inteira maior que zero no item ${index+1}.`);
         if(usados.has(ferramentaId)) throw new Error("A mesma ferramenta não pode aparecer duas vezes no contrato.");
         usados.add(ferramentaId);
         if(original && !precisaRecalcular){
-            return {...original,id:linha.dataset.idItem || original.id,
+            return {...original,id:linha.dataset.idItem || original.id,quantidade,
                 renovacaoAutomatica:TIPOS_PERIODICOS.includes(original.tipoCobranca) && renovacao};
         }
         if(!TIPOS_PERIODICOS.includes(tipo)){
@@ -3721,7 +3822,7 @@ function coletarItensFormulario(retirada){
             if(!Number.isFinite(valorInformado) || valorInformado<=0)
                 throw new Error(`Informe um subtotal válido no item ${index+1}.`);
             return {
-                id:linha.dataset.idItem || gerarId(),ferramentaId,tipoCobranca:"personalizado",
+                id:linha.dataset.idItem || gerarId(),ferramentaId,quantidade,tipoCobranca:"personalizado",
                 periodosContratados:1,valorPeriodo:0,valorInicial:arredondarValor(valorInformado),
                 valor:arredondarValor(valorInformado),devolucao:devolucaoInformada,
                 devolucaoOriginal:devolucaoInformada,renovacaoAutomatica:false,renovacoes:0
@@ -3733,9 +3834,9 @@ function coletarItensFormulario(retirada){
             throw new Error(`Cadastre o preço da modalidade escolhida para a ferramenta do item ${index+1}.`);
         const devolucao=fimDoPeriodo(retirada,tipo,periodos);
         if(!devolucao) throw new Error(`Não foi possível calcular a devolução do item ${index+1}.`);
-        const inicial=arredondarValor(taxa*periodos);
+        const inicial=arredondarValor(taxa*periodos*quantidade);
         const novoItem={
-            id:linha.dataset.idItem || gerarId(),ferramentaId,tipoCobranca:tipo,
+            id:linha.dataset.idItem || gerarId(),ferramentaId,quantidade,tipoCobranca:tipo,
             periodosContratados:periodos,valorPeriodo:taxa,valorInicial:inicial,valor:inicial,
             devolucao,devolucaoOriginal:devolucao,renovacaoAutomatica:renovacao,renovacoes:0
         };
@@ -3747,8 +3848,20 @@ function coletarItensFormulario(retirada){
     });
 }
 
-function ferramentaEmOutraLocacaoAtiva(ferramentaId,ignorarLocacaoId=""){
-    return locacoes.some(l=>l.id!==ignorarLocacaoId && l.status==="Ativa" && locacaoUsaFerramenta(l,ferramentaId));
+function erroEstoqueLocacao(itens,anterior=null){
+    if(anterior?.status==="Finalizada") return "";
+    const idsAnteriores=new Set(anterior?.status==="Ativa" ? idsFerramentasDaLocacao(anterior) : []);
+    for(const item of itens){
+        const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+        if(ferramentaComUsoBloqueado(ferramenta) && !idsAnteriores.has(item.ferramentaId)){
+            return `${ferramenta?.nome || "A ferramenta"} está em ${String(ferramenta?.status || "indisponível").toLowerCase()}.`;
+        }
+        const disponivel=estoqueDisponivelFerramenta(item.ferramentaId,anterior?.status==="Ativa" ? anterior.id : "");
+        if(quantidadeItemLocacao(item)>disponivel){
+            return `${ferramenta?.nome || "A ferramenta"}: somente ${disponivel} unidade(s) disponível(is).`;
+        }
+    }
+    return "";
 }
 
 function salvarLocacao(abrirContratoDepois=false){
@@ -3771,17 +3884,8 @@ function salvarLocacao(abrirContratoDepois=false){
     if(momentoPagamento==="legado" && itens.some(item=>item.renovacaoAutomatica)){
         mostrarToast("Confirme a situação do pagamento antigo antes de ativar renovações.");return;
     }
-    const ativa = !anterior || anterior.status==="Ativa";
-    const idsAnteriores=new Set(anterior && anterior.status==="Ativa" ? idsFerramentasDaLocacao(anterior) : []);
-    if(ativa){
-        for(const item of itens){
-            const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
-            if(!idsAnteriores.has(item.ferramentaId) &&
-               (ferramenta?.status!=="Disponível" || ferramentaEmOutraLocacaoAtiva(item.ferramentaId,anterior?.id))){
-                mostrarToast(`${ferramenta?.nome || "A ferramenta"} não está disponível.`);return;
-            }
-        }
-    }
+    const erroEstoque=erroEstoqueLocacao(itens,anterior);
+    if(erroEstoque){mostrarToast(erroEstoque);return;}
 
     const locacao={
         ...(anterior || {}),id:anterior?.id || gerarId(),clienteId,retirada,itens,caucao,
@@ -3877,16 +3981,7 @@ function salvarLocacao(abrirContratoDepois=false){
         contratos.push(novoContrato);
         contratoId=novoContrato.id;
     }
-    const idsNovos=new Set(locacao.status==="Ativa" ? idsFerramentasDaLocacao(locacao) : []);
-    for(const id of idsAnteriores){
-        if(idsNovos.has(id)) continue;
-        const ferramenta=ferramentas.find(f=>f.id===id);
-        if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(id,locacao.id)) ferramenta.status="Disponível";
-    }
-    for(const id of idsNovos){
-        const ferramenta=ferramentas.find(f=>f.id===id);
-        if(ferramenta) ferramenta.status="Alugada";
-    }
+    corrigirDisponibilidade();
 
     salvarDados();
     fecharModal();
@@ -3978,12 +4073,7 @@ function concluirFinalizacao(locacao){
     if(locacao.status!=="Ativa") return;
     locacao.status="Finalizada";
     locacao.devolvidaEm=dataHoje();
-    for(const ferramentaId of idsFerramentasDaLocacao(locacao)){
-        const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
-        if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(ferramentaId,locacao.id)){
-            ferramenta.status="Disponível";
-        }
-    }
+    corrigirDisponibilidade();
     const contrato=contratos.find(c=>c.locacaoId===locacao.id);
     if(contrato) contrato.status="Finalizado";
 
@@ -3999,17 +4089,9 @@ function excluirLocacao(id){
     const locacao = locacoes.find(l=>l.id===id);
     if(!locacao) return;
 
-    const ferramentasDaLocacao=idsFerramentasDaLocacao(locacao);
     locacoes = locacoes.filter(l=>l.id!==id);
     contratos = contratos.filter(c=>c.locacaoId!==id);
-    if(locacao.status==="Ativa"){
-        for(const ferramentaId of ferramentasDaLocacao){
-            const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
-            if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(ferramentaId)){
-                ferramenta.status="Disponível";
-            }
-        }
-    }
+    corrigirDisponibilidade();
 
     salvarDados();
     renderLocacoes();
@@ -4043,7 +4125,8 @@ function ferramentasLocacaoHtml(locacao,limite=4){
     const itens=itensDaLocacao(locacao);
     const visiveis=itens.slice(0,limite).map(item=>{
         const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
-        return `<div><strong>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong>${ferramenta?.codigo ? ` <small style="color:#6b7280;">(${escapeHtml(ferramenta.codigo)})</small>` : ""}</div>`;
+        const quantidade=quantidadeItemLocacao(item);
+        return `<div><strong>${quantidade>1 ? `${quantidade}× ` : ""}${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong>${ferramenta?.codigo ? ` <small style="color:#6b7280;">(${escapeHtml(ferramenta.codigo)})</small>` : ""}</div>`;
     }).join("");
     const restantes=Math.max(0,itens.length-limite);
     return visiveis+(restantes ? `<small style="color:#1d4ed8;">+ ${restantes} outra(s)</small>` : "") || "-";
@@ -4075,13 +4158,14 @@ function renderLocacoes(){
         const cliente = clientes.find(c=>c.id===l.clienteId);
         const contrato = contratos.find(c=>c.locacaoId===l.id);
         const quantidadeItens=itensDaLocacao(l).length;
+        const quantidadeUnidades=totalUnidadesLocacao(l);
 
         return `
             <tr>
                 <td><strong>${escapeHtml(cliente?.nome || "Cliente removido")}</strong></td>
                 <td>
                     ${ferramentasLocacaoHtml(l)}
-                    ${quantidadeItens>1 ? `<small style="color:#1d4ed8;">${quantidadeItens} ferramentas no contrato</small>` : ""}
+                    <small style="color:#1d4ed8;">${quantidadeUnidades} unidade(s) em ${quantidadeItens} tipo(s)</small>
                 </td>
                 <td>${formatarData(l.retirada)}</td>
                 <td>${formatarData(l.devolucao)}${l.renovacoes ? `<br><small style="color:#92400e;">${l.renovacoes} renovação(ões) automática(s)</small>` : ""}</td>
@@ -4181,6 +4265,7 @@ function visualizarContrato(id){
     if(!locacao) return;
     const cliente=clientes.find(c=>c.id===locacao.clienteId);
     const itens=itensDaLocacao(locacao);
+    const totalUnidades=totalUnidadesLocacao(locacao);
     const classeCompacta=itens.length>=14 ? "contrato-ultracompacto" : itens.length>=9 ? "contrato-supercompacto" : itens.length>=5 ? "contrato-compacto" : "";
     const numeroArquivo=String(contrato.numero || "contrato").replace(/[^a-zA-Z0-9_-]/g,"-");
     const recebido=valorRecebidoLocacao(locacao);
@@ -4192,7 +4277,7 @@ function visualizarContrato(id){
         const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
         const periodico=TIPOS_PERIODICOS.includes(item.tipoCobranca);
         const detalhesCobranca=periodico
-            ? `${Number(item.periodosContratados || 1)} × ${formatarMoeda(item.valorPeriodo)}`
+            ? `${Number(item.periodosContratados || 1)} período(s) × ${formatarMoeda(item.valorPeriodo)}/un.`
             : "Valor combinado";
         const renovacao=Number(item.renovacoes || 0)>0
             ? `${Number(item.renovacoes)} renovação(ões)`
@@ -4200,6 +4285,7 @@ function visualizarContrato(id){
         return `<tr>
             <td class="col-num">${index+1}</td>
             <td class="col-equip"><strong>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong><small>Cód. ${escapeHtml(ferramenta?.codigo || "-")} · ${escapeHtml(ferramenta?.voltagem || "Sem voltagem")}</small></td>
+            <td class="col-qtd"><strong>${quantidadeItemLocacao(item)}</strong></td>
             <td class="col-cobranca">${escapeHtml(textoCobranca(item.tipoCobranca))}<small>${escapeHtml(renovacao)}</small></td>
             <td class="col-periodo">${escapeHtml(detalhesCobranca)}</td>
             <td class="col-devolucao">${escapeHtml(formatarData(item.devolucao))}<small>Retirada ${escapeHtml(formatarData(locacao.retirada))}</small></td>
@@ -4254,14 +4340,14 @@ function visualizarContrato(id){
             <section class="contrato-secao contrato-itens-secao">
                 <h2>Ferramentas, períodos e valores</h2>
                 <table class="contrato-tabela">
-                    <thead><tr><th class="col-num">#</th><th class="col-equip">Ferramenta</th><th class="col-cobranca">Cobrança</th><th class="col-periodo">Qtd. / tarifa</th><th class="col-devolucao">Devolução prevista</th><th class="col-valor">Subtotal</th></tr></thead>
+                    <thead><tr><th class="col-num">#</th><th class="col-equip">Ferramenta</th><th class="col-qtd">Qtd.</th><th class="col-cobranca">Cobrança</th><th class="col-periodo">Períodos / tarifa</th><th class="col-devolucao">Devolução prevista</th><th class="col-valor">Subtotal</th></tr></thead>
                     <tbody>${linhasItens}</tbody>
                 </table>
             </section>
 
             <section class="contrato-resumo">
                 <div><small>Retirada</small><strong>${escapeHtml(formatarData(locacao.retirada))}</strong></div>
-                <div><small>Itens</small><strong>${itens.length} ferramenta${itens.length===1 ? "" : "s"}</strong></div>
+                <div><small>Itens</small><strong>${totalUnidades} unidade${totalUnidades===1 ? "" : "s"}</strong><small>${itens.length} tipo(s)</small></div>
                 <div><small>Total</small><strong>${formatarMoeda(locacao.valor)}</strong></div>
                 <div><small>Caução</small><strong>${formatarMoeda(locacao.caucao)}</strong></div>
                 <div><small>Saldo</small><strong>${formatarMoeda(saldo)}</strong></div>
@@ -4288,7 +4374,7 @@ function visualizarContrato(id){
                 <div class="assinatura"><strong>${escapeHtml(cliente?.nome || "LOCATÁRIO")}</strong>LOCATÁRIO</div>
             </section>
 
-            <footer class="contrato-rodape"><span>Contrato nº ${escapeHtml(contrato.numero)}</span><span>${itens.length} item(ns) · Total ${formatarMoeda(locacao.valor)}</span></footer>
+            <footer class="contrato-rodape"><span>Contrato nº ${escapeHtml(contrato.numero)}</span><span>${totalUnidades} unidade(s) em ${itens.length} tipo(s) · Total ${formatarMoeda(locacao.valor)}</span></footer>
         </article>
     `,"modal-contrato");
     ajustarContratoA4();
@@ -4374,6 +4460,7 @@ function liberarManutencao(id){
     const f=ferramentas.find(x=>x.id===id);
     if(!f) return;
     f.status="Disponível";
+    corrigirDisponibilidade();
     salvarDados();
     renderManutencao();
     renderFerramentas();
@@ -4396,7 +4483,7 @@ function cobrancasDoItemLocacao(locacao,item){
     const renovacoes=Math.min(3650,Math.max(0,Number(item.renovacoes || 0)));
     for(let i=1;i<=renovacoes;i++){
         const vencimento=fimDoPeriodo(locacao.retirada,item.tipoCobranca,inicial+i-1);
-        if(vencimento) cobrancas.push({data:proximoDia(vencimento),valor:Number(item.valorPeriodo || 0),itemId:item.id,ferramentaId:item.ferramentaId});
+        if(vencimento) cobrancas.push({data:proximoDia(vencimento),valor:Number(item.valorPeriodo || 0)*quantidadeItemLocacao(item),itemId:item.id,ferramentaId:item.ferramentaId});
     }
     return cobrancas;
 }
@@ -4607,12 +4694,12 @@ function renderRankingFinanceiro(periodo,chave,cadastros,elementoId,mes){
     periodo.forEach(l=>{
         const alvos=chave==="ferramentaId"
             ? itensDaLocacao(l).filter(item=>cobrancasDoItemLocacao(l,item).some(c=>!mes || c.data?.slice(0,7)===mes))
-                .map(item=>({id:item.ferramentaId,valor:contratadoItemNoPeriodo(l,item,mes)}))
-            : [{id:l[chave],valor:contratadoNoPeriodo(l,mes)}];
+                .map(item=>({id:item.ferramentaId,valor:contratadoItemNoPeriodo(l,item,mes),quantidade:quantidadeItemLocacao(item)}))
+            : [{id:l[chave],valor:contratadoNoPeriodo(l,mes),quantidade:1}];
         for(const alvo of alvos){
             if(!alvo.id) continue;
             const item=agrupados.get(alvo.id) || {quantidade:0,valor:0};
-            item.quantidade++;
+            item.quantidade+=alvo.quantidade;
             item.valor+=alvo.valor;
             agrupados.set(alvo.id,item);
         }
@@ -4624,7 +4711,7 @@ function renderRankingFinanceiro(periodo,chave,cadastros,elementoId,mes){
         const largura=Math.round(item.quantidade/maximo*100);
         return `<div class="ranking-item"><div class="ranking-cabecalho">
             <strong>${escapeHtml(cadastro?.nome || "Cadastro removido")}</strong>
-            <span>${item.quantidade} ${item.quantidade===1 ? "locação" : "locações"} · ${formatarMoeda(item.valor)}</span>
+            <span>${item.quantidade} ${chave==="ferramentaId" ? (item.quantidade===1 ? "unidade locada" : "unidades locadas") : (item.quantidade===1 ? "locação" : "locações")} · ${formatarMoeda(item.valor)}</span>
             </div><div class="ranking-trilho"><div style="width:${largura}%"></div></div></div>`;
     }).join("") : '<p class="descricao">Nenhuma locação neste período.</p>';
 }
@@ -4641,7 +4728,7 @@ function atualizarDashboard(){
         .reduce((total,p)=>total+Number(p.valor || 0),0),0);
 
     document.getElementById("dashClientes").textContent=clientes.length;
-    document.getElementById("dashFerramentas").textContent=ferramentas.length;
+    document.getElementById("dashFerramentas").textContent=ferramentas.reduce((total,f)=>total+estoqueTotalFerramenta(f),0);
     document.getElementById("dashLocacoes").textContent=ativas.length;
     document.getElementById("dashFaturamento").textContent=formatarMoeda(recebidoMes);
 
