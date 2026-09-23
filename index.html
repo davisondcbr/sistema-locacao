@@ -700,6 +700,18 @@ textarea{
 .form-group input[type="checkbox"]{width:auto;padding:0;margin-right:7px;vertical-align:middle;}
 .form-group input[readonly]{background:#f8fafc;color:#374151;}
 
+.locacao-itens{display:grid;gap:14px;}
+.locacao-item{border:1px solid #dbe3ef;border-radius:12px;background:#f8fafc;padding:14px;}
+.locacao-item-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.locacao-item-cabecalho strong{font-size:14px;color:#1f2937;}
+.locacao-item-grid{display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:10px;align-items:end;}
+.locacao-item-grid .campo-ferramenta{grid-column:span 2;}
+.locacao-item-grid label{font-size:11px;}
+.locacao-item-resumo{display:block;margin-top:10px;color:#6b7280;font-size:12px;line-height:1.4;}
+.locacao-total{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;color:#1e3a8a;}
+.locacao-total strong{font-size:21px;}
+.locacao-item-remover:disabled{opacity:.45;cursor:not-allowed;}
+
 input:focus,
 select:focus,
 textarea:focus{
@@ -804,6 +816,9 @@ textarea{
     box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
 
+.modal.modal-larga{max-width:1180px;}
+.modal.modal-contrato{max-width:1040px;background:#e5e7eb;}
+
 .modal-header{
     padding:18px 20px;
     border-bottom:1px solid var(--border);
@@ -835,60 +850,68 @@ textarea{
 }
 
 /* =========================
-   CONTRACT
+   CONTRATO A4
 ========================= */
 
+.contrato-acoes{display:flex;justify-content:flex-end;gap:8px;margin-bottom:15px;}
 .contrato{
-    background:white;
-    padding:45px;
-    max-width:850px;
+    --doc-fonte:10.5px;
+    --doc-espaco:10px;
+    background:#fff;
+    width:210mm;
+    max-width:100%;
+    min-height:297mm;
+    padding:12mm;
     margin:auto;
-    color:#111;
-    line-height:1.55;
+    color:#172033;
+    line-height:1.32;
+    box-shadow:0 6px 28px rgba(15,23,42,.16);
+    font-size:var(--doc-fonte);
 }
-
-.contrato h1{
-    text-align:center;
-    font-size:22px;
-    margin-bottom:5px;
-}
-
-.contrato .numero{
-    text-align:center;
-    color:#666;
-    margin-bottom:25px;
-}
-
-.contrato h3{
-    background:#f3f4f6;
-    padding:8px;
-    margin-top:20px;
-    margin-bottom:10px;
-    font-size:14px;
-}
-
-.contrato p{
-    font-size:13px;
-    margin-bottom:7px;
-}
-
-.contrato table{
-    min-width:0;
-}
-
-.assinaturas{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:50px;
-    margin-top:70px;
-}
-
-.assinatura{
-    border-top:1px solid #111;
-    text-align:center;
-    padding-top:8px;
-    font-size:12px;
-}
+.contrato.contrato-compacto{--doc-fonte:9.5px;--doc-espaco:7px;padding:9mm;}
+.contrato.contrato-supercompacto{--doc-fonte:8.5px;--doc-espaco:5px;padding:7mm;line-height:1.22;}
+.contrato.contrato-ultracompacto{--doc-fonte:7.5px;--doc-espaco:3px;padding:5mm;line-height:1.14;}
+.contrato.contrato-supercompacto .contrato-termos,.contrato.contrato-ultracompacto .contrato-termos{column-count:2;column-gap:12px;}
+.contrato.contrato-ultracompacto .contrato-tabela th,.contrato.contrato-ultracompacto .contrato-tabela td{padding:3px;}
+.contrato.contrato-ultracompacto .assinaturas{margin-top:15px;}
+.contrato-topo{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;border-bottom:3px solid #1d4ed8;padding-bottom:10px;margin-bottom:var(--doc-espaco);}
+.contrato-marca{font-size:21px;font-weight:850;color:#0f172a;letter-spacing:-.4px;}
+.contrato-marca small{display:block;font-size:9px;font-weight:600;color:#64748b;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;}
+.contrato-identificacao{text-align:right;}
+.contrato-identificacao strong{display:block;color:#1d4ed8;font-size:15px;}
+.contrato-identificacao span{font-size:9px;color:#64748b;}
+.contrato-titulo{text-align:center;margin:8px 0 var(--doc-espaco);}
+.contrato-titulo h1{font-size:16px;line-height:1.1;margin:0 0 3px;text-transform:uppercase;letter-spacing:.4px;}
+.contrato-titulo p{margin:0;color:#64748b;font-size:9px;}
+.contrato-blocos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:var(--doc-espaco);}
+.contrato-bloco{border:1px solid #dbe3ef;border-radius:7px;padding:8px;background:#f8fafc;}
+.contrato-bloco h2,.contrato-secao h2,.contrato-local h2,.contrato-observacoes h2{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#1d4ed8;margin:0 0 5px;}
+.contrato-bloco p{margin:2px 0;font-size:var(--doc-fonte);}
+.contrato-secao{margin:0 0 var(--doc-espaco);break-inside:avoid;}
+.contrato-local{border-left:3px solid #1d4ed8;padding:6px 9px;background:#f8fafc;margin-bottom:var(--doc-espaco);}
+.contrato-local p{margin:0;}
+.contrato-tabela{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;font-size:var(--doc-fonte);}
+.contrato-tabela th{background:#1e3a8a!important;color:#fff!important;text-align:left;padding:6px 5px;font-size:8px;text-transform:uppercase;letter-spacing:.25px;}
+.contrato-tabela td{border:1px solid #dbe3ef;padding:6px 5px;vertical-align:top;word-break:break-word;}
+.contrato-tabela tbody tr:nth-child(even){background:#f8fafc!important;}
+.contrato-tabela .col-num{width:5%;text-align:center;}
+.contrato-tabela .col-equip{width:27%;}
+.contrato-tabela .col-cobranca{width:13%;}
+.contrato-tabela .col-periodo{width:12%;}
+.contrato-tabela .col-devolucao{width:14%;}
+.contrato-tabela .col-valor{width:15%;text-align:right;}
+.contrato-tabela small{display:block;color:#64748b;font-size:8px;margin-top:2px;}
+.contrato-resumo{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:var(--doc-espaco) 0;}
+.contrato-resumo>div{border:1px solid #dbe3ef;border-radius:6px;padding:6px;background:#f8fafc;}
+.contrato-resumo small{display:block;color:#64748b;font-size:8px;text-transform:uppercase;margin-bottom:2px;}
+.contrato-resumo strong{font-size:10px;}
+.contrato-termos{border:1px solid #dbe3ef;border-radius:7px;padding:8px;white-space:pre-line;text-align:justify;font-size:calc(var(--doc-fonte) - .7px);}
+.contrato-observacoes{margin-top:var(--doc-espaco);padding:7px 9px;border-left:3px solid #94a3b8;background:#f8fafc;}
+.contrato-observacoes p{margin:2px 0;}
+.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:25px;break-inside:avoid;}
+.assinatura{border-top:1px solid #172033;text-align:center;padding-top:5px;font-size:9px;}
+.assinatura strong{display:block;font-size:9.5px;}
+.contrato-rodape{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #dbe3ef;margin-top:10px;padding-top:5px;font-size:8px;color:#64748b;}
 
 /* =========================
    CONFIG
@@ -938,45 +961,32 @@ textarea{
    PRINT
 ========================= */
 
+@page{size:A4 portrait;margin:7mm;}
+
 @media print{
-    body{
-        background:white;
+    html,body{background:#fff!important;margin:0!important;padding:0!important;}
+    body *{visibility:hidden!important;}
+    #modalOverlay{display:block!important;position:static!important;inset:auto!important;padding:0!important;background:transparent!important;}
+    #modalOverlay .modal{display:block!important;position:static!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;}
+    #modalOverlay .modal-body{display:block!important;padding:0!important;overflow:visible!important;}
+    #modalOverlay .modal-header,.contrato-acoes{display:none!important;}
+    #contratoImpressao,#contratoImpressao *{visibility:visible!important;}
+    #contratoImpressao{
+        position:absolute!important;
+        left:0!important;
+        top:0!important;
+        width:196mm!important;
+        max-width:196mm!important;
+        min-height:0!important;
+        margin:0!important;
+        padding:6mm!important;
+        box-shadow:none!important;
+        color:#000!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
     }
-
-    .sidebar,
-    .topbar,
-    .page-title,
-    .modal-header,
-    .no-print{
-        display:none!important;
-    }
-
-    .main{
-        margin:0;
-        width:100%;
-    }
-
-    .content{
-        padding:0;
-    }
-
-    .modal-overlay{
-        position:static;
-        display:block;
-        background:white;
-        padding:0;
-    }
-
-    .modal{
-        max-height:none;
-        max-width:none;
-        box-shadow:none;
-    }
-
-    .contrato{
-        max-width:none;
-        padding:20px;
-    }
+    #contratoImpressao .contrato-secao,#contratoImpressao tr,#contratoImpressao .assinaturas{break-inside:avoid;page-break-inside:avoid;}
+    #contratoImpressao thead{display:table-header-group;}
 }
 
 /* =========================
@@ -994,6 +1004,8 @@ textarea{
     }
     .financeiro-resumo{grid-template-columns:repeat(2,minmax(0,1fr));}
     .financeiro-graficos,.financeiro-ranking{grid-template-columns:1fr;}
+    .locacao-item-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .locacao-item-grid .campo-ferramenta{grid-column:span 2;}
 }
 
 @media(max-width:750px){
@@ -1053,6 +1065,9 @@ textarea{
     .form-grid-3{
         grid-template-columns:1fr;
     }
+    .locacao-item-grid{grid-template-columns:1fr 1fr;}
+    .locacao-item-grid .campo-ferramenta{grid-column:1/-1;}
+    .locacao-total{align-items:flex-start;flex-direction:column;}
 
     .page-title{
         align-items:flex-start;
@@ -1271,7 +1286,7 @@ textarea{
                 <thead>
                     <tr>
                         <th>Cliente</th>
-                        <th>Ferramenta</th>
+                        <th>Ferramentas</th>
                         <th>Período</th>
                         <th>Valor</th>
                         <th>Status</th>
@@ -1456,7 +1471,7 @@ textarea{
 
                     <tr>
                         <th>Cliente</th>
-                        <th>Ferramenta</th>
+                        <th>Ferramentas</th>
                         <th>Retirada</th>
                         <th>Devolução</th>
                         <th>Cobrança</th>
@@ -1548,7 +1563,7 @@ textarea{
                 <thead>
 
                     <tr>
-                        <th>Ferramenta</th>
+                        <th>Ferramentas</th>
                         <th>Código</th>
                         <th>Voltagem</th>
                         <th>Status</th>
@@ -1639,7 +1654,7 @@ textarea{
         </div>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>Retirada</th><th>Devolução prevista</th><th>Cliente</th><th>Ferramenta</th><th>Contratado no período</th><th>Recebido no contrato</th><th>A receber</th><th>Pagamento</th><th>Situação</th><th>Ação</th></tr></thead>
+                <thead><tr><th>Retirada</th><th>Devolução prevista</th><th>Cliente</th><th>Ferramentas</th><th>Contratado no período</th><th>Recebido no contrato</th><th>A receber</th><th>Pagamento</th><th>Situação</th><th>Ação</th></tr></thead>
                 <tbody id="finHistorico"></tbody>
             </table>
         </div>
@@ -1649,7 +1664,7 @@ textarea{
         <div class="table-header"><h3>Recebimentos no período <small id="finQuantidadeRecebimentos" style="color:#6b7280"></small></h3></div>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>Data do pagamento</th><th>Cliente</th><th>Ferramenta</th><th>Data da retirada</th><th>Forma</th><th>Valor recebido</th><th>Contrato</th></tr></thead>
+                <thead><tr><th>Data do pagamento</th><th>Cliente</th><th>Ferramentas</th><th>Data da retirada</th><th>Forma</th><th>Valor recebido</th><th>Contrato</th></tr></thead>
                 <tbody id="finRecebimentos"></tbody>
             </table>
         </div>
@@ -1817,13 +1832,13 @@ let ferramentaEditando = null;
 let clienteEditando = null;
 let locacaoEditando = null;
 
-const termoPadrao = `O LOCATÁRIO declara receber o equipamento em perfeito estado de funcionamento e conservação, comprometendo-se a utilizá-lo corretamente e exclusivamente para a finalidade a que se destina.
+const termoPadrao = `O LOCATÁRIO declara receber a(s) ferramenta(s) e/ou equipamento(s) em perfeito estado de funcionamento e conservação, comprometendo-se a utilizá-los corretamente e exclusivamente para a finalidade a que se destinam.
 
-O LOCATÁRIO será responsável pela guarda do equipamento durante todo o período da locação.
+O LOCATÁRIO será responsável pela guarda dos itens durante todo o período da locação.
 
-Em caso de danos causados por mau uso, perda, furto ou extravio, o LOCATÁRIO poderá ser responsabilizado pelos custos necessários para reparo ou reposição do equipamento.
+Em caso de danos causados por mau uso, perda, furto ou extravio, o LOCATÁRIO poderá ser responsabilizado pelos custos necessários para reparo ou reposição dos itens.
 
-O equipamento deverá ser devolvido na data acordada neste contrato.
+Cada item deverá ser devolvido na data indicada neste contrato.
 
 A caução eventualmente paga será utilizada conforme as condições acordadas entre as partes.
 
@@ -1853,7 +1868,7 @@ let temporizadorTentativa = null;
 let atrasoTentativa = 15000;
 let conflitoPendente = localStorage.getItem("loc_sync_conflict")==="1";
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
-const VERSAO_BANCO = 2;
+const VERSAO_BANCO = 3;
 const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
 const AUSENTE = Symbol("campo ausente");
 
@@ -2159,10 +2174,12 @@ function corrigirDisponibilidade(){
     let corrigiu=false;
     for(const locacao of locacoes){
         if(locacao.status!=="Ativa") continue;
-        const ferramenta=ferramentas.find(item=>item.id===locacao.ferramentaId);
-        if(ferramenta?.status==="Disponível"){
-            ferramenta.status="Alugada";
-            corrigiu=true;
+        for(const ferramentaId of idsFerramentasDaLocacao(locacao)){
+            const ferramenta=ferramentas.find(item=>item.id===ferramentaId);
+            if(ferramenta?.status==="Disponível"){
+                ferramenta.status="Alugada";
+                corrigiu=true;
+            }
         }
     }
     return corrigiu;
@@ -2567,15 +2584,19 @@ function toggleMenu(){
    MODAL
 ===================================================== */
 
-function abrirModal(titulo,html){
+function abrirModal(titulo,html,classe=""){
     document.getElementById("modalTitulo").textContent = titulo;
     document.getElementById("modalBody").innerHTML = html;
+    const modal=document.querySelector("#modalOverlay .modal");
+    if(modal) modal.className=`modal ${classe}`.trim();
     document.getElementById("modalOverlay").classList.add("show");
 }
 
 
 function fecharModal(){
     document.getElementById("modalOverlay").classList.remove("show");
+    const modal=document.querySelector("#modalOverlay .modal");
+    if(modal) modal.className="modal";
     clienteSelecionadoLocacao = null;
     ferramentaEditando = null;
     clienteEditando = null;
@@ -2974,7 +2995,7 @@ function salvarFerramenta(){
 
 
 function excluirFerramenta(id){
-    const possuiLocacao = locacoes.some(l=>l.ferramentaId===id);
+    const possuiLocacao = locacoes.some(l=>locacaoUsaFerramenta(l,id));
     if(possuiLocacao){
         mostrarToast("Esta ferramenta possui histórico de locação e não pode ser excluída.");
         return;
@@ -3080,103 +3101,290 @@ function periodosEntreDatas(retirada,devolucao,tipo){
 
 function arredondarValor(valor){return Math.round((Number(valor)+Number.EPSILON)*100)/100;}
 
-function tarifaDaLocacao(ferramenta,tipo,anterior){
-    if(anterior?.renovacaoAutomatica && anterior.ferramentaId===ferramenta?.id &&
-       anterior.tipoCobranca===tipo && Number(anterior.valorPeriodo)>0){
-        return Number(anterior.valorPeriodo);
+let sequenciaItemLocacao=0;
+let itensOriginaisLocacao=new Map();
+
+function normalizarItemLocacao(item,locacao){
+    const tipo=item?.tipoCobranca || locacao?.tipoCobranca || "personalizado";
+    const retirada=locacao?.retirada || dataHoje();
+    const devolucao=item?.devolucao || locacao?.devolucao || retirada;
+    const periodos=Number(item?.periodosContratados || locacao?.periodosContratados ||
+        (TIPOS_PERIODICOS.includes(tipo) ? periodosEntreDatas(retirada,devolucao,tipo) : 1));
+    const renovacoes=Math.max(0,Number(item?.renovacoes ?? locacao?.renovacoes ?? 0));
+    const valor=Number(item?.valor ?? locacao?.valor ?? 0);
+    const taxaSalva=Number(item?.valorPeriodo ?? locacao?.valorPeriodo ?? 0);
+    const valorInicialSalvo=Number(item?.valorInicial ?? locacao?.valorInicial ?? 0);
+    const valorInicial=valorInicialSalvo>0 ? valorInicialSalvo :
+        renovacoes>0 && taxaSalva>0 ? Math.max(0,valor-renovacoes*taxaSalva) : valor;
+    const taxa=taxaSalva>0 ? taxaSalva : periodos>0 ? arredondarValor(valorInicial/periodos) : valorInicial;
+    return {
+        id:item?.id || `item-${locacao?.id || gerarId()}`,
+        ferramentaId:item?.ferramentaId || locacao?.ferramentaId || "",
+        tipoCobranca:tipo,
+        periodosContratados:Number.isInteger(periodos) && periodos>0 ? periodos : 1,
+        valorPeriodo:taxa,
+        valorInicial,
+        valor,
+        devolucao,
+        devolucaoOriginal:item?.devolucaoOriginal || locacao?.devolucaoOriginal || devolucao,
+        renovacaoAutomatica:Boolean(item?.renovacaoAutomatica ?? locacao?.renovacaoAutomatica),
+        renovacoes,
+        legado:!Array.isArray(locacao?.itens)
+    };
+}
+
+function itensDaLocacao(locacao){
+    if(!locacao) return [];
+    if(Array.isArray(locacao.itens) && locacao.itens.length) return locacao.itens;
+    return locacao.ferramentaId ? [normalizarItemLocacao(null,locacao)] : [];
+}
+
+function idsFerramentasDaLocacao(locacao){
+    return [...new Set(itensDaLocacao(locacao).map(item=>item.ferramentaId).filter(Boolean))];
+}
+
+function locacaoUsaFerramenta(locacao,ferramentaId){
+    return idsFerramentasDaLocacao(locacao).includes(ferramentaId);
+}
+
+function nomesFerramentasLocacao(locacao,limite=0){
+    const nomes=idsFerramentasDaLocacao(locacao).map(id=>{
+        const f=ferramentas.find(item=>item.id===id);
+        return f ? `${f.nome}${f.codigo ? ` (${f.codigo})` : ""}` : "Ferramenta não localizada";
+    });
+    if(limite>0 && nomes.length>limite) return `${nomes.slice(0,limite).join(", ")} e mais ${nomes.length-limite}`;
+    return nomes.join(", ") || "-";
+}
+
+function maiorDataItens(itens,campo="devolucao"){
+    return itens.map(item=>item[campo]).filter(Boolean).sort().at(-1) || "";
+}
+
+function sincronizarResumoItens(locacao){
+    if(!Array.isArray(locacao.itens) || !locacao.itens.length) return locacao;
+    const itens=locacao.itens;
+    const tipos=[...new Set(itens.map(item=>item.tipoCobranca))];
+    locacao.ferramentaId=itens[0].ferramentaId;
+    locacao.tipoCobranca=tipos.length===1 ? tipos[0] : "multipla";
+    locacao.devolucao=maiorDataItens(itens);
+    locacao.valor=arredondarValor(itens.reduce((s,item)=>s+Number(item.valor || 0),0));
+    locacao.valorInicial=arredondarValor(itens.reduce((s,item)=>s+Number(item.valorInicial || 0),0));
+    locacao.renovacoes=itens.reduce((s,item)=>s+Number(item.renovacoes || 0),0);
+    locacao.renovacaoAutomatica=itens.some(item=>item.renovacaoAutomatica);
+    locacao.devolucaoOriginal=maiorDataItens(itens,"devolucaoOriginal");
+    locacao.periodosContratados=tipos.length===1 && itens.every(item=>item.periodosContratados===itens[0].periodosContratados)
+        ? itens[0].periodosContratados : null;
+    locacao.valorPeriodo=tipos.length===1 ? arredondarValor(itens.reduce((s,item)=>s+Number(item.valorPeriodo || 0),0)) : null;
+    return locacao;
+}
+
+function renovarItemLocacao(item,retirada,hoje){
+    if(!item.renovacaoAutomatica || !TIPOS_PERIODICOS.includes(item.tipoCobranca)) return false;
+    const inicial=Number(item.periodosContratados),taxa=Number(item.valorPeriodo),valorInicial=Number(item.valorInicial);
+    if(!Number.isInteger(inicial) || inicial<1 || inicial>3650 || !Number.isFinite(taxa) || taxa<=0 ||
+       !Number.isFinite(valorInicial) || valorInicial<=0 || !dataCalendarioUTC(retirada)) return false;
+    let periodos=Math.max(inicial,inicial+Math.max(0,Number(item.renovacoes || 0)));
+    let vencimento=fimDoPeriodo(retirada,item.tipoCobranca,periodos);
+    while(vencimento && hoje>vencimento && periodos<3650){
+        periodos++;
+        vencimento=fimDoPeriodo(retirada,item.tipoCobranca,periodos);
     }
-    return Number(ferramenta?.[tipo] || 0);
+    if(!vencimento) return false;
+    const renovacoes=periodos-inicial;
+    const valor=arredondarValor(valorInicial+renovacoes*taxa);
+    const mudou=item.devolucao!==vencimento || Number(item.valor)!==valor || Number(item.renovacoes || 0)!==renovacoes;
+    Object.assign(item,{devolucao:vencimento,valor,renovacoes});
+    return mudou;
 }
 
 function renovarLocacoesVencidas(lista=locacoes,hoje=dataHoje()){
     let alteradas=0;
-    for(const l of lista){
-        if(l.status!=="Ativa" || !l.renovacaoAutomatica || !TIPOS_PERIODICOS.includes(l.tipoCobranca)) continue;
-        const inicial=Number(l.periodosContratados),taxa=Number(l.valorPeriodo),valorInicial=Number(l.valorInicial);
-        if(!Number.isInteger(inicial) || inicial<1 || inicial>3650 || !Number.isFinite(taxa) || taxa<=0 ||
-           !Number.isFinite(valorInicial) || valorInicial<=0 || !dataCalendarioUTC(l.retirada)) continue;
-        let periodos=Math.max(inicial,inicial+Math.max(0,Number(l.renovacoes || 0)));
-        let vencimento=fimDoPeriodo(l.retirada,l.tipoCobranca,periodos);
-        while(vencimento && hoje>vencimento && periodos<3650){
-            periodos++;
-            vencimento=fimDoPeriodo(l.retirada,l.tipoCobranca,periodos);
+    for(const locacao of lista){
+        if(locacao.status!=="Ativa") continue;
+        const possuiItens=Array.isArray(locacao.itens) && locacao.itens.length;
+        const itens=possuiItens ? locacao.itens : itensDaLocacao(locacao);
+        let mudou=false;
+        for(const item of itens) mudou=renovarItemLocacao(item,locacao.retirada,hoje) || mudou;
+        if(!mudou) continue;
+        if(possuiItens){
+            sincronizarResumoItens(locacao);
+        }else{
+            const item=itens[0];
+            Object.assign(locacao,{
+                devolucao:item.devolucao,valor:item.valor,renovacoes:item.renovacoes,
+                devolucaoOriginal:item.devolucaoOriginal,valorInicial:item.valorInicial,
+                valorPeriodo:item.valorPeriodo,periodosContratados:item.periodosContratados
+            });
         }
-        if(!vencimento) continue;
-        const renovacoes=periodos-inicial;
-        const valor=arredondarValor(valorInicial+renovacoes*taxa);
-        const recebido=valorRecebidoLocacao(l);
-        const status=l.pagamentoStatus==="Não informado" ? "Não informado" :
-            recebido>=valor-0.009 ? "Pago" : recebido>0 ? "Parcial" : "Pendente";
-        if(l.devolucao!==vencimento || Number(l.valor)!==valor || Number(l.renovacoes || 0)!==renovacoes || l.pagamentoStatus!==status){
-            Object.assign(l,{devolucao:vencimento,valor,renovacoes,pagamentoStatus:status});
-            alteradas++;
-        }
+        const recebido=valorRecebidoLocacao(locacao);
+        locacao.pagamentoStatus=locacao.pagamentoStatus==="Não informado" ? "Não informado" :
+            recebido>=Number(locacao.valor)-0.009 ? "Pago" : recebido>0 ? "Parcial" : "Pendente";
+        alteradas++;
     }
     return alteradas;
 }
 
-function periodoTravado(locacao){return Number(locacao?.renovacoes || 0)>0;}
+function opcoesFerramentasLocacao(selecionado="",atual=null){
+    const anteriores=new Set(idsFerramentasDaLocacao(atual));
+    return ferramentas.filter(f=>atual?.status==="Finalizada" || f.status==="Disponível" || anteriores.has(f.id) || f.id===selecionado)
+        .map(f=>`<option value="${escapeHtml(f.id)}" ${f.id===selecionado ? "selected" : ""}>${escapeHtml(f.nome)} — ${escapeHtml(f.codigo || "sem código")}</option>`).join("");
+}
 
-function atualizarPrazoLocacao(recalcular=true){
-    const ferramentaId=document.getElementById("locacaoFerramenta")?.value;
-    const tipo=document.getElementById("locacaoTipoCobranca")?.value;
+function adicionarItemLocacao(dados={}){
+    const container=document.getElementById("locacaoItens");
+    if(!container) return;
+    const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
+    const item=normalizarItemLocacao(dados,atual || {retirada:document.getElementById("locacaoRetirada")?.value || dataHoje()});
+    if(!dados.ferramentaId){
+        Object.assign(item,{id:gerarId(),ferramentaId:"",tipoCobranca:"diaria",periodosContratados:1,
+            valorPeriodo:0,valorInicial:0,valor:0,devolucao:"",devolucaoOriginal:"",
+            renovacaoAutomatica:true,renovacoes:0,legado:false});
+    }
+    const chave=`li${++sequenciaItemLocacao}`;
+    const travado=Number(item.renovacoes || 0)>0 || atual?.status==="Finalizada";
+    itensOriginaisLocacao.set(chave,JSON.parse(JSON.stringify(item)));
+    container.insertAdjacentHTML("beforeend",`
+        <div class="locacao-item" id="locacaoItem_${chave}" data-chave="${chave}" data-id-item="${escapeHtml(item.id)}" data-travado="${travado ? "1" : "0"}">
+            <div class="locacao-item-cabecalho">
+                <strong class="locacao-item-titulo">Ferramenta</strong>
+                <button type="button" class="btn btn-danger btn-sm locacao-item-remover" onclick="removerItemLocacao('${chave}')" ${travado ? "disabled" : ""}>Remover</button>
+            </div>
+            <div class="locacao-item-grid">
+                <div class="form-group campo-ferramenta">
+                    <label>Ferramenta *</label>
+                    <select id="itemFerramenta_${chave}" onchange="alterarFerramentaItem('${chave}')" ${travado ? "disabled" : ""}>
+                        <option value="">Selecione...</option>${opcoesFerramentasLocacao(item.ferramentaId,atual)}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cobrança *</label>
+                    <select id="itemTipo_${chave}" onchange="recalcularItemLocacao('${chave}',true,true)" ${travado ? "disabled" : ""}>
+                        ${[["diaria","Diária"],["semanal","Semanal"],["mensal","Mensal"],["personalizado","Personalizado"]].map(([valor,nome])=>`<option value="${valor}" ${item.tipoCobranca===valor ? "selected" : ""}>${nome}</option>`).join("")}
+                    </select>
+                </div>
+                <div class="form-group" id="itemGrupoPeriodos_${chave}">
+                    <label>Períodos *</label>
+                    <input id="itemPeriodos_${chave}" type="number" min="1" max="3650" step="1" value="${item.periodosContratados || 1}" oninput="recalcularItemLocacao('${chave}')" ${travado ? "disabled" : ""}>
+                </div>
+                <div class="form-group">
+                    <label>Tarifa</label>
+                    <input id="itemTarifa_${chave}" type="number" step="0.01" value="${Number(item.valorPeriodo || 0).toFixed(2)}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Devolução prevista *</label>
+                    <input id="itemDevolucao_${chave}" type="date" value="${escapeHtml(item.devolucao || "")}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) || travado ? "readonly" : ""} onchange="atualizarTotalLocacao()">
+                </div>
+                <div class="form-group">
+                    <label>Subtotal *</label>
+                    <input id="itemValor_${chave}" type="number" min="0" step="0.01" value="${Number(item.valor || 0).toFixed(2)}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) || travado ? "readonly" : ""} oninput="atualizarTotalLocacao()">
+                </div>
+            </div>
+            <label style="margin:3px 0 0;"><input id="itemRenovacao_${chave}" type="checkbox" ${item.renovacaoAutomatica ? "checked" : ""} onchange="recalcularItemLocacao('${chave}')" ${!TIPOS_PERIODICOS.includes(item.tipoCobranca) || atual?.status==="Finalizada" ? "disabled" : ""}> Renovar este item automaticamente após o vencimento</label>
+            <small class="locacao-item-resumo" id="itemResumo_${chave}"></small>
+        </div>`);
+    recalcularItemLocacao(chave,!dados.ferramentaId,false);
+    atualizarBotoesItensLocacao();
+}
+
+function atualizarBotoesItensLocacao(){
+    const linhas=[...document.querySelectorAll("#locacaoItens .locacao-item")];
+    linhas.forEach((linha,index)=>{
+        const titulo=linha.querySelector(".locacao-item-titulo");
+        if(titulo) titulo.textContent=`Ferramenta ${index+1}`;
+        const botao=linha.querySelector(".locacao-item-remover");
+        if(botao) botao.disabled=linhas.length===1 || linha.dataset.travado==="1";
+    });
+}
+
+function removerItemLocacao(chave){
+    const linha=document.getElementById(`locacaoItem_${chave}`);
+    if(!linha || linha.dataset.travado==="1") return;
+    if(document.querySelectorAll("#locacaoItens .locacao-item").length<=1){mostrarToast("A locação precisa ter pelo menos uma ferramenta.");return;}
+    linha.remove();
+    itensOriginaisLocacao.delete(chave);
+    atualizarBotoesItensLocacao();
+    atualizarTotalLocacao();
+}
+
+function alterarFerramentaItem(chave){recalcularItemLocacao(chave,true,true);}
+
+function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
+    const linha=document.getElementById(`locacaoItem_${chave}`);
+    if(!linha) return;
+    const ferramentaId=document.getElementById(`itemFerramenta_${chave}`).value;
+    const tipo=document.getElementById(`itemTipo_${chave}`).value;
+    const periodosCampo=document.getElementById(`itemPeriodos_${chave}`);
+    const tarifaCampo=document.getElementById(`itemTarifa_${chave}`);
+    const devolucaoCampo=document.getElementById(`itemDevolucao_${chave}`);
+    const valorCampo=document.getElementById(`itemValor_${chave}`);
+    const auto=document.getElementById(`itemRenovacao_${chave}`);
+    const grupoPeriodos=document.getElementById(`itemGrupoPeriodos_${chave}`);
+    const resumo=document.getElementById(`itemResumo_${chave}`);
     const retirada=document.getElementById("locacaoRetirada")?.value;
-    const periodo=document.getElementById("locacaoPeriodos");
-    const devolucao=document.getElementById("locacaoDevolucao");
-    const valor=document.getElementById("locacaoValor");
-    const aviso=document.getElementById("locacaoResumoPrazo");
-    const auto=document.getElementById("locacaoRenovacaoAuto");
-    const grupo=document.getElementById("grupoLocacaoPeriodos");
-    if(!periodo || !devolucao || !valor || !auto || !grupo) return;
-    const periodico=TIPOS_PERIODICOS.includes(tipo);
+    const original=itensOriginaisLocacao.get(chave);
     const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
-    const anterior=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
-    const travado=periodoTravado(anterior);
-    grupo.hidden=!periodico;
-    auto.disabled=!periodico || anterior?.status==="Finalizada";
+    const periodico=TIPOS_PERIODICOS.includes(tipo);
+    const travado=linha.dataset.travado==="1";
+    grupoPeriodos.hidden=!periodico;
+    auto.disabled=!periodico || (locacaoEditando && locacoes.find(l=>l.id===locacaoEditando)?.status==="Finalizada");
     if(!periodico) auto.checked=false;
-    devolucao.readOnly=periodico || travado;
-    valor.readOnly=periodico || travado;
-    periodo.disabled=travado;
-    document.getElementById("locacaoRetirada").readOnly=travado;
-    document.getElementById("locacaoTipoCobranca").disabled=travado;
-    document.getElementById("locacaoFerramenta").disabled=travado;
+    devolucaoCampo.readOnly=periodico || travado;
+    valorCampo.readOnly=periodico || travado;
     if(travado){
-        aviso.textContent=`Contrato já renovado ${anterior.renovacoes} vez(es): datas, tipo e valor ficam preservados. Você pode interromper as próximas renovações desmarcando a opção.`;
+        resumo.textContent=`Item já renovado ${Number(original?.renovacoes || 0)} vez(es). Dados financeiros preservados; apenas as próximas renovações podem ser interrompidas.`;
+        atualizarTotalLocacao();
         return;
     }
-    if(!periodico){aviso.textContent="No valor personalizado, informe a devolução e o preço manualmente; não há renovação automática.";return;}
-    const quantidade=Number(periodo.value);
-    const taxa=tarifaDaLocacao(ferramenta,tipo,anterior);
-    const fim=fimDoPeriodo(retirada,tipo,quantidade);
-    const somenteAtivacao=anterior && !anterior.renovacaoAutomatica && auto.checked &&
-        anterior.ferramentaId===ferramentaId && anterior.tipoCobranca===tipo &&
-        anterior.retirada===retirada &&
-        periodosEntreDatas(anterior.retirada,anterior.devolucao,tipo)===quantidade;
-    if(recalcular){
-        devolucao.value=somenteAtivacao ? anterior.devolucao : fim || "";
-        valor.value=somenteAtivacao ? anterior.valor :
-            taxa>0 && fim ? arredondarValor(taxa*quantidade).toFixed(2) : "";
-        const status=document.getElementById("locacaoStatusPagamento");
-        if(status && status.value==="Pago" && Number(document.getElementById("locacaoValorPago")?.value || 0)<Number(valor.value || 0)){
-            status.value="Parcial";
+    if(!periodico){
+        tarifaCampo.value="0.00";
+        if(recalcular && original?.tipoCobranca!=="personalizado"){
+            devolucaoCampo.value="";valorCampo.value="";
         }
+        resumo.textContent="Informe manualmente a devolução e o subtotal deste item. O valor personalizado não renova automaticamente.";
+        atualizarTotalLocacao();
+        return;
     }
-    if(taxa<=0){aviso.textContent="Cadastre o preço desta modalidade na ferramenta para calcular a locação.";return;}
-    const unidade={diaria:"diária(s)",semanal:"semana(s)",mensal:"mês(es)"}[tipo];
-    let resumo=`${quantidade || 0} ${unidade} × ${formatarMoeda(taxa)}. Devolução prevista: ${formatarData(fim)}. Cada renovação soma ${formatarMoeda(taxa)}.`;
-    if(somenteAtivacao) resumo+=` O valor inicial de ${formatarMoeda(anterior.valor)} será preservado.`;
-    if(somenteAtivacao && anterior.devolucao!==fim) resumo+=" Para ativar, ajuste os períodos: a data antiga não coincide com o fim de um período completo.";
-    if(auto.checked && fim && quantidade>0 && dataHoje()>fim){
-        const simulacao={retirada,tipoCobranca:tipo,periodosContratados:quantidade,
-            valorPeriodo:taxa,valorInicial:arredondarValor(taxa*quantidade),
-            devolucao:fim,valor:arredondarValor(taxa*quantidade),
-            renovacoes:0,renovacaoAutomatica:true,status:"Ativa",pagamentoStatus:"Pendente",pagamentos:[]};
-        renovarLocacoesVencidas([simulacao]);
-        resumo+=` Hoje: ${simulacao.renovacoes} renovação(ões), total ${formatarMoeda(simulacao.valor)}, próxima devolução ${formatarData(simulacao.devolucao)}.`;
+    const periodos=Number(periodosCampo.value);
+    let tarifa=Number(tarifaCampo.value || 0);
+    if(forcarTarifa || !original || original.ferramentaId!==ferramentaId || original.tipoCobranca!==tipo){
+        tarifa=Number(ferramenta?.[tipo] || 0);
+        tarifaCampo.value=tarifa.toFixed(2);
     }
-    if(anterior && !recalcular && !anterior.renovacaoAutomatica) resumo+=" O valor anterior foi preservado até você alterar os períodos ou ativar a renovação.";
-    aviso.textContent=resumo;
+    const devolucao=fimDoPeriodo(retirada,tipo,periodos);
+    const inicial=arredondarValor(tarifa*periodos);
+    if(recalcular){
+        devolucaoCampo.value=devolucao || "";
+        valorCampo.value=tarifa>0 && devolucao ? inicial.toFixed(2) : "";
+    }
+    let texto=tarifa>0 && devolucao ? `${periodos} período(s) × ${formatarMoeda(tarifa)}. Vencimento: ${formatarData(devolucao)}.` :
+        "Selecione uma ferramenta com preço cadastrado para esta modalidade.";
+    if(auto.checked && tarifa>0 && devolucao && dataHoje()>devolucao){
+        const simulado={tipoCobranca:tipo,periodosContratados:periodos,valorPeriodo:tarifa,
+            valorInicial:inicial,valor:inicial,devolucao,devolucaoOriginal:devolucao,
+            renovacaoAutomatica:true,renovacoes:0};
+        renovarItemLocacao(simulado,retirada,dataHoje());
+        valorCampo.value=Number(simulado.valor).toFixed(2);
+        devolucaoCampo.value=simulado.devolucao;
+        texto+=` Hoje: ${simulado.renovacoes} renovação(ões), subtotal ${formatarMoeda(simulado.valor)}, próxima devolução ${formatarData(simulado.devolucao)}.`;
+    }else if(auto.checked){
+        texto+=` Após o vencimento, cada renovação acrescenta ${formatarMoeda(tarifa)}.`;
+    }
+    resumo.textContent=texto;
+    atualizarTotalLocacao();
+}
+
+function atualizarTodosItensLocacao(){
+    document.querySelectorAll("#locacaoItens .locacao-item").forEach(linha=>recalcularItemLocacao(linha.dataset.chave));
+}
+
+function atualizarTotalLocacao(){
+    const total=[...document.querySelectorAll("#locacaoItens .locacao-item")].reduce((s,linha)=>
+        s+Number(document.getElementById(`itemValor_${linha.dataset.chave}`)?.value || 0),0);
+    const campo=document.getElementById("locacaoValorTotal");
+    if(campo) campo.textContent=formatarMoeda(total);
+    const status=document.getElementById("locacaoStatusPagamento");
+    const recebido=Number(document.getElementById("locacaoValorPago")?.value || 0);
+    if(status && status.value==="Pago" && recebido<total-0.009) status.value=recebido>0 ? "Parcial" : "Pendente";
 }
 
 function abrirNovaLocacao(id=null){
@@ -3184,6 +3392,7 @@ function abrirNovaLocacao(id=null){
     if(id && !atual){ mostrarToast("Locação não encontrada."); return; }
     locacaoEditando = atual?.id || null;
     clienteSelecionadoLocacao = atual?.clienteId || null;
+    itensOriginaisLocacao.clear();
     abrirModal(atual ? "Editar Locação" : "Nova Locação",`
         <div class="form-grid">
             <div class="form-group full">
@@ -3202,55 +3411,23 @@ function abrirNovaLocacao(id=null){
                 <div id="clienteSelecionadoInfo" class="cliente-selecionado"></div>
             </div>
 
-            <div class="form-group full">
-                <label>Ferramenta *</label>
-                <select id="locacaoFerramenta" onchange="alterarTipoCobranca()">
-                    <option value="">Selecione a ferramenta</option>
-                    ${ferramentas
-                        .filter(f=>atual?.status==="Finalizada" || f.status==="Disponível" || f.id===atual?.ferramentaId)
-                        .map(f=>`
-                            <option value="${f.id}">
-                                ${escapeHtml(f.nome)} —${escapeHtml(f.codigo)}
-                            </option>
-                        `).join("")}
-                </select>
-            </div>
-
             <div class="form-group">
                 <label>Data de retirada *</label>
-                <input id="locacaoRetirada" type="date" value="${dataHoje()}" onchange="atualizarPrazoLocacao()">
+                <input id="locacaoRetirada" type="date" value="${dataHoje()}" onchange="atualizarTodosItensLocacao()" ${atual && (atual.status==="Finalizada" || itensDaLocacao(atual).some(item=>Number(item.renovacoes || 0)>0)) ? "readonly" : ""}>
             </div>
 
             <div class="form-group">
-                <label>Devolução prevista *</label>
-                <input id="locacaoDevolucao" type="date" value="${dataHoje()}">
-            </div>
-
-            <div class="form-group">
-                <label>Tipo de cobrança *</label>
-                <select id="locacaoTipoCobranca" onchange="atualizarPrazoLocacao()">
-                    <option value="diaria">Diária</option>
-                    <option value="semanal">Semanal</option>
-                    <option value="mensal">Mensal</option>
-                    <option value="personalizado">Valor personalizado</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="grupoLocacaoPeriodos">
-                <label>Quantidade de períodos *</label>
-                <input id="locacaoPeriodos" type="number" min="1" max="3650" step="1" value="1" onchange="atualizarPrazoLocacao()" oninput="atualizarPrazoLocacao()">
-            </div>
-
-            <div class="form-group">
-                <label>Valor total da locação *</label>
-                <input id="locacaoValor" type="number" step="0.01" min="0" placeholder="0,00">
+                <label>Situação da locação</label>
+                <input value="${escapeHtml(atual?.status || "Nova locação")}" readonly>
             </div>
 
             <div class="form-group full">
-                <label><input id="locacaoRenovacaoAuto" type="checkbox" ${!atual || atual.renovacaoAutomatica ? "checked" : ""} onchange="atualizarPrazoLocacao()"> Renovar automaticamente ao passar da data prevista</label>
-                <small id="locacaoResumoPrazo" style="display:block;color:#6b7280;margin-top:7px;"></small>
-                ${atual && !atual.renovacaoAutomatica ? '<small style="display:block;color:#92400e;margin-top:6px;">Registro antigo: a renovação não será ativada sem marcar a opção acima. Confira os valores antes de ativar.</small>' : ''}
+                <div class="info-box">Adicione todas as ferramentas deste cliente. Cada item pode ter cobrança diária, semanal, mensal ou personalizada e uma devolução própria.</div>
+                <div class="locacao-itens" id="locacaoItens"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top:12px;" onclick="adicionarItemLocacao()" ${atual?.status==="Finalizada" ? "disabled" : ""}>＋ Adicionar outra ferramenta</button>
             </div>
+
+            <div class="form-group full"><div class="locacao-total"><span>Total atualizado do contrato</span><strong id="locacaoValorTotal">R$ 0,00</strong></div></div>
 
             <div class="form-group">
                 <label>Caução</label>
@@ -3262,20 +3439,8 @@ function abrirNovaLocacao(id=null){
                 <select id="locacaoMomentoPagamento" onchange="alterarMomentoPagamento()">
                     <option value="">Selecione...</option>
                     <option value="entrada">No ato do contrato</option>
-                    <option value="devolucao">Na devolução da ferramenta</option>
+                    <option value="devolucao">Na devolução das ferramentas</option>
                     ${atual && !atual.momentoPagamento ? '<option value="legado">Não informado (registro antigo)</option>' : ''}
-                </select>
-            </div>
-
-            <div class="form-group pagamento-extra" id="blocoFormaPagamento" hidden>
-                <label>Forma de pagamento *</label>
-                <select id="locacaoPagamento">
-                    <option value="">Selecione a forma...</option>
-                    <option value="Pix">Pix</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Outro">Outro</option>
                 </select>
             </div>
 
@@ -3298,8 +3463,20 @@ function abrirNovaLocacao(id=null){
                 <input id="locacaoDataPagamento" type="date">
             </div>` : ''}
 
+            <div class="form-group pagamento-extra" id="blocoFormaPagamento" hidden>
+                <label>Forma de pagamento *</label>
+                <select id="locacaoPagamento">
+                    <option value="">Selecione a forma...</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartão">Cartão</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+
             <div class="form-group full">
-                <small style="color:#6b7280;">No pagamento na entrada, o valor é registrado ao salvar o contrato. Na devolução, o sistema solicitará a forma de pagamento antes de finalizar.</small>
+                <small style="color:#6b7280;">No pagamento na entrada, o total do contrato é registrado ao salvar. Na devolução, o sistema calcula o saldo de todas as ferramentas antes de finalizar.</small>
             </div>
 
             <div class="form-group full">
@@ -3350,17 +3527,11 @@ function abrirNovaLocacao(id=null){
             <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
             <button class="btn btn-primary" onclick="salvarLocacao()">${atual ? '💾 Salvar alterações' : '📦 Criar locação'}</button>
         </div>
-    `);
+    `,"modal-larga");
 
     if(atual){
         selecionarClienteLocacao(atual.clienteId);
-        document.getElementById("locacaoFerramenta").value=atual.ferramentaId;
         document.getElementById("locacaoRetirada").value=atual.retirada || "";
-        document.getElementById("locacaoDevolucao").value=atual.devolucao || "";
-        document.getElementById("locacaoTipoCobranca").value=atual.tipoCobranca || "personalizado";
-        document.getElementById("locacaoPeriodos").value=atual.periodosContratados ||
-            (TIPOS_PERIODICOS.includes(atual.tipoCobranca) ? periodosEntreDatas(atual.retirada,atual.devolucao,atual.tipoCobranca) : 1);
-        document.getElementById("locacaoValor").value=atual.valor ?? "";
         document.getElementById("locacaoCaucao").value=atual.caucao ?? 0;
         document.getElementById("locacaoMomentoPagamento").value=atual.momentoPagamento || "legado";
         if(document.getElementById("locacaoStatusPagamento"))
@@ -3375,9 +3546,12 @@ function abrirNovaLocacao(id=null){
             document.getElementById("locacao"+sufixo).value=endereco[prop] || "";
         }
         document.getElementById("locacaoObservacoes").value=atual.observacoes || "";
+        itensDaLocacao(atual).forEach(item=>adicionarItemLocacao(item));
+    }else{
+        adicionarItemLocacao();
     }
-    atualizarPrazoLocacao(!atual);
     atualizarCamposPagamento();
+    atualizarTotalLocacao();
 }
 
 function editarLocacao(id){
@@ -3466,73 +3640,112 @@ function selecionarClienteLocacao(id){
 
 
 function alterarTipoCobranca(){
-    atualizarPrazoLocacao();
+    atualizarTodosItensLocacao();
 }
 
+function coletarItensFormulario(retirada){
+    const linhas=[...document.querySelectorAll("#locacaoItens .locacao-item")];
+    if(!linhas.length) throw new Error("Adicione pelo menos uma ferramenta.");
+    const usados=new Set();
+    return linhas.map((linha,index)=>{
+        const chave=linha.dataset.chave;
+        const ferramentaId=document.getElementById(`itemFerramenta_${chave}`).value;
+        const tipo=document.getElementById(`itemTipo_${chave}`).value;
+        const periodos=Number(document.getElementById(`itemPeriodos_${chave}`).value);
+        const taxa=Number(document.getElementById(`itemTarifa_${chave}`).value);
+        const devolucaoInformada=document.getElementById(`itemDevolucao_${chave}`).value;
+        const valorInformado=Number(document.getElementById(`itemValor_${chave}`).value);
+        const renovacao=document.getElementById(`itemRenovacao_${chave}`).checked;
+        const original=itensOriginaisLocacao.get(chave);
+        const travado=linha.dataset.travado==="1";
+        if(!ferramentas.some(f=>f.id===ferramentaId)) throw new Error(`Selecione a ferramenta do item ${index+1}.`);
+        if(usados.has(ferramentaId)) throw new Error("A mesma ferramenta não pode aparecer duas vezes no contrato.");
+        usados.add(ferramentaId);
+        if(travado && original){
+            return {...original,id:linha.dataset.idItem || original.id,renovacaoAutomatica:TIPOS_PERIODICOS.includes(original.tipoCobranca) && renovacao};
+        }
+        if(!TIPOS_PERIODICOS.includes(tipo)){
+            if(!dataCalendarioUTC(devolucaoInformada) || devolucaoInformada<retirada)
+                throw new Error(`Informe uma devolução válida no item ${index+1}.`);
+            if(!Number.isFinite(valorInformado) || valorInformado<=0)
+                throw new Error(`Informe um subtotal válido no item ${index+1}.`);
+            return {
+                id:linha.dataset.idItem || gerarId(),ferramentaId,tipoCobranca:"personalizado",
+                periodosContratados:1,valorPeriodo:0,valorInicial:arredondarValor(valorInformado),
+                valor:arredondarValor(valorInformado),devolucao:devolucaoInformada,
+                devolucaoOriginal:devolucaoInformada,renovacaoAutomatica:false,renovacoes:0
+            };
+        }
+        if(!Number.isInteger(periodos) || periodos<1 || periodos>3650)
+            throw new Error(`Informe períodos inteiros entre 1 e 3650 no item ${index+1}.`);
+        if(!Number.isFinite(taxa) || taxa<=0)
+            throw new Error(`Cadastre o preço da modalidade escolhida para a ferramenta do item ${index+1}.`);
+        const devolucao=fimDoPeriodo(retirada,tipo,periodos);
+        if(!devolucao) throw new Error(`Não foi possível calcular a devolução do item ${index+1}.`);
+        const inicial=arredondarValor(taxa*periodos);
+        return {
+            id:linha.dataset.idItem || gerarId(),ferramentaId,tipoCobranca:tipo,
+            periodosContratados:periodos,valorPeriodo:taxa,valorInicial:inicial,valor:inicial,
+            devolucao,devolucaoOriginal:devolucao,renovacaoAutomatica:renovacao,renovacoes:0
+        };
+    });
+}
+
+function ferramentaEmOutraLocacaoAtiva(ferramentaId,ignorarLocacaoId=""){
+    return locacoes.some(l=>l.id!==ignorarLocacaoId && l.status==="Ativa" && locacaoUsaFerramenta(l,ferramentaId));
+}
 
 function salvarLocacao(){
     const anterior=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
     if(locacaoEditando && !anterior){ mostrarToast("Locação não encontrada."); return; }
     const clienteId = document.getElementById("locacaoCliente").value;
-    const ferramentaId = document.getElementById("locacaoFerramenta").value;
     const retirada = document.getElementById("locacaoRetirada").value;
-    const tipoCobranca = document.getElementById("locacaoTipoCobranca").value;
-    const periodico=TIPOS_PERIODICOS.includes(tipoCobranca);
-    const periodos=Number(document.getElementById("locacaoPeriodos").value);
-    const renovacaoAutomatica=periodico && document.getElementById("locacaoRenovacaoAuto").checked;
-    const travado=periodoTravado(anterior);
-    const anteriorPeriodos=anterior?.periodosContratados ||
-        (anterior && periodico ? periodosEntreDatas(anterior.retirada,anterior.devolucao,anterior.tipoCobranca) : 1);
-    const mudouPrazo=periodico && !travado && anterior &&
-        (anterior.retirada!==retirada || anterior.tipoCobranca!==tipoCobranca ||
-         anterior.ferramentaId!==ferramentaId || anteriorPeriodos!==periodos);
-    const apenasAtivou=Boolean(anterior && !anterior.renovacaoAutomatica && renovacaoAutomatica && !mudouPrazo);
-    const prazoAlterado=!anterior || mudouPrazo || apenasAtivou;
-    const ferramenta = ferramentas.find(f=>f.id===ferramentaId);
-    const taxa=periodico ? tarifaDaLocacao(ferramenta,tipoCobranca,anterior) : 0;
-    const devolucao=periodico && prazoAlterado && !travado ?
-        apenasAtivou ? anterior.devolucao : fimDoPeriodo(retirada,tipoCobranca,periodos) :
-        document.getElementById("locacaoDevolucao").value;
-    const valor=periodico && prazoAlterado && !travado ?
-        apenasAtivou ? Number(anterior.valor) : arredondarValor(taxa*periodos) :
-        Number(document.getElementById("locacaoValor").value);
     const caucao = Number(document.getElementById("locacaoCaucao").value || 0);
     const momentoPagamento = document.getElementById("locacaoMomentoPagamento").value;
 
     if(!clientes.some(c=>c.id===clienteId)){ mostrarToast("Selecione um cliente."); return; }
-    if(!ferramentaId){ mostrarToast("Selecione uma ferramenta."); return; }
-    if(!dataCalendarioUTC(retirada) || !dataCalendarioUTC(devolucao)){
-        mostrarToast("Informe datas válidas para a retirada e a devolução."); return;
-    }
-    if(devolucao < retirada || (!anterior && devolucao===retirada)){
-        mostrarToast("A devolução precisa ser posterior à retirada."); return;
-    }
-    if(periodico && (!Number.isInteger(periodos) || periodos<1 || periodos>3650)){
-        mostrarToast("Informe uma quantidade inteira de períodos entre 1 e 3650."); return;
-    }
-    if(periodico && prazoAlterado && taxa<=0){
-        mostrarToast("Cadastre o valor desta diária, semana ou mensalidade na ferramenta."); return;
-    }
-    if(apenasAtivou && devolucao!==fimDoPeriodo(retirada,tipoCobranca,periodos)){
-        mostrarToast("Ajuste a quantidade de períodos: a devolução antiga não coincide com um período completo."); return;
-    }
-    if(!Number.isFinite(valor) || valor <= 0){ mostrarToast("Informe um valor válido."); return; }
+    if(!dataCalendarioUTC(retirada)){ mostrarToast("Informe uma data de retirada válida."); return; }
     if(!Number.isFinite(caucao) || caucao < 0){ mostrarToast("Informe uma caução válida."); return; }
     if(!["entrada","devolucao","legado"].includes(momentoPagamento) ||
        (momentoPagamento==="legado" && (!anterior || anterior.momentoPagamento))){
         mostrarToast("Escolha quando o pagamento será feito."); return;
     }
-    if(renovacaoAutomatica && momentoPagamento==="legado"){
-        mostrarToast("Confirme a situação do pagamento antigo antes de ativar a renovação.");return;
+    let itens;
+    try{itens=coletarItensFormulario(retirada);}catch(erro){mostrarToast(erro.message);return;}
+    if(momentoPagamento==="legado" && itens.some(item=>item.renovacaoAutomatica)){
+        mostrarToast("Confirme a situação do pagamento antigo antes de ativar renovações.");return;
+    }
+    const ativa = !anterior || anterior.status==="Ativa";
+    const idsAnteriores=new Set(anterior && anterior.status==="Ativa" ? idsFerramentasDaLocacao(anterior) : []);
+    if(ativa){
+        for(const item of itens){
+            const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+            if(!idsAnteriores.has(item.ferramentaId) &&
+               (ferramenta?.status!=="Disponível" || ferramentaEmOutraLocacaoAtiva(item.ferramentaId,anterior?.id))){
+                mostrarToast(`${ferramenta?.nome || "A ferramenta"} não está disponível.`);return;
+            }
+        }
     }
 
-    if(!ferramenta){ mostrarToast("Ferramenta não encontrada."); return; }
-    const ativa = !anterior || anterior.status==="Ativa";
-    if(ativa && ferramentaId!==anterior?.ferramentaId &&
-       (ferramenta.status!=="Disponível" ||
-        locacoes.some(l=>l.id!==anterior?.id && l.status==="Ativa" && l.ferramentaId===ferramentaId))){
-        mostrarToast("Esta ferramenta não está disponível."); return;
-    }
+    const locacao={
+        ...(anterior || {}),id:anterior?.id || gerarId(),clienteId,retirada,itens,caucao,
+        localLocacao:{
+            cep:document.getElementById("locacaoCep").value.trim(),
+            numero:document.getElementById("locacaoNumero").value.trim(),
+            endereco:document.getElementById("locacaoEndereco").value.trim(),
+            bairro:document.getElementById("locacaoBairro").value.trim(),
+            cidade:document.getElementById("locacaoCidade").value.trim(),
+            estado:document.getElementById("locacaoEstado").value.trim().toUpperCase(),
+            referencia:document.getElementById("locacaoReferencia").value.trim()
+        },
+        observacoes:document.getElementById("locacaoObservacoes").value.trim(),
+        status:anterior?.status || "Ativa",criadaEm:anterior?.criadaEm || new Date().toISOString(),
+        ...(anterior ? {atualizadaEm:new Date().toISOString()} : {})
+    };
+    sincronizarResumoItens(locacao);
+    if(locacao.status==="Ativa") renovarLocacoesVencidas([locacao]);
+    const valor=Number(locacao.valor || 0);
+    if(!Number.isFinite(valor) || valor<=0){mostrarToast("O contrato precisa ter valor total maior que zero.");return;}
 
     const multiplosPagamentos=Array.isArray(anterior?.pagamentos) && anterior.pagamentos.length>1;
     const statusPagamento=anterior
@@ -3584,70 +3797,36 @@ function salvarLocacao(){
         }else{
             Object.assign(dadosPagamento,{pagamento:"",valorPago:0,dataPagamento:"",pagamentos:[]});
         }
+    }else{
+        Object.assign(dadosPagamento,{pagamentoStatus:"Não informado"});
     }
-
-    const valorInicial=periodico && !travado && prazoAlterado ? valor : anterior?.valorInicial ?? valor;
-    const devolucaoOriginal=periodico && !travado && prazoAlterado ? devolucao : anterior?.devolucaoOriginal ?? devolucao;
-
-    const locacao = {
-        ...(anterior || {}),
-        id:anterior?.id || gerarId(),
-        clienteId,
-        ferramentaId,
-        retirada,
-        devolucao,
-        tipoCobranca,
-        valor,
-        caucao,
-        ...(periodico && (prazoAlterado || anterior?.periodosContratados) ? {
-            periodosContratados:travado ? anterior.periodosContratados : periodos,
-            valorPeriodo:travado ? anterior.valorPeriodo : taxa,
-            valorInicial,devolucaoOriginal
-        } : !periodico ? {
-            periodosContratados:null,valorPeriodo:null,valorInicial:null,devolucaoOriginal:null
-        } : {}),
-        renovacaoAutomatica,
-        renovacoes:travado ? anterior.renovacoes : 0,
-        ...dadosPagamento,
-        localLocacao:{
-            cep:document.getElementById("locacaoCep").value.trim(),
-            numero:document.getElementById("locacaoNumero").value.trim(),
-            endereco:document.getElementById("locacaoEndereco").value.trim(),
-            bairro:document.getElementById("locacaoBairro").value.trim(),
-            cidade:document.getElementById("locacaoCidade").value.trim(),
-            estado:document.getElementById("locacaoEstado").value.trim().toUpperCase(),
-            referencia:document.getElementById("locacaoReferencia").value.trim()
-        },
-        observacoes:document.getElementById("locacaoObservacoes").value.trim(),
-        status:anterior?.status || "Ativa",
-        criadaEm:anterior?.criadaEm || new Date().toISOString(),
-        ...(anterior ? {atualizadaEm:new Date().toISOString()} : {})
-    };
-
-    if(locacao.status==="Ativa" && renovacaoAutomatica){
-        renovarLocacoesVencidas([locacao]);
+    Object.assign(locacao,dadosPagamento);
+    const recebidoFinal=valorRecebidoLocacao(locacao);
+    if(locacao.pagamentoStatus!=="Não informado"){
+        locacao.pagamentoStatus=recebidoFinal>=valor-0.009 ? "Pago" : recebidoFinal>0 ? "Parcial" : "Pendente";
     }
 
     let numeroContrato="";
     if(anterior){
         const index=locacoes.findIndex(l=>l.id===anterior.id);
         locacoes[index]=locacao;
-        if(anterior.status==="Ativa" && anterior.ferramentaId!==ferramentaId){
-            const antiga=ferramentas.find(f=>f.id===anterior.ferramentaId);
-            if(antiga?.status==="Alugada" &&
-               !locacoes.some(l=>l.id!==locacao.id && l.status==="Ativa" && l.ferramentaId===antiga.id)){
-                antiga.status="Disponível";
-            }
-        }
-        if(anterior.status==="Ativa") ferramenta.status="Alugada";
     }else{
         locacoes.push(locacao);
-        ferramenta.status="Alugada";
         numeroContrato=gerarNumeroContrato();
         contratos.push({
             id:gerarId(),numero:numeroContrato,locacaoId:locacao.id,
             status:"Ativo",criadoEm:new Date().toISOString()
         });
+    }
+    const idsNovos=new Set(locacao.status==="Ativa" ? idsFerramentasDaLocacao(locacao) : []);
+    for(const id of idsAnteriores){
+        if(idsNovos.has(id)) continue;
+        const ferramenta=ferramentas.find(f=>f.id===id);
+        if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(id,locacao.id)) ferramenta.status="Disponível";
+    }
+    for(const id of idsNovos){
+        const ferramenta=ferramentas.find(f=>f.id===id);
+        if(ferramenta) ferramenta.status="Alugada";
     }
 
     salvarDados();
@@ -3666,7 +3845,7 @@ function finalizarLocacao(id){
     }
     const saldo=saldoDaLocacao(locacao);
 
-    if(saldo<=0 && locacao.pagamento && locacao.dataPagamento){
+    if(saldo<=0){
         if(!confirm("O pagamento já está registrado. Confirmar devolução e finalizar a locação?")) return;
         concluirFinalizacao(locacao);
         return;
@@ -3721,7 +3900,7 @@ function confirmarPagamentoEFinalizar(id){
     if(!forma || !/^\d{4}-\d{2}-\d{2}$/.test(data || "") || !["entrada","devolucao"].includes(momento)){
         mostrarToast("Informe a forma e a data do pagamento."); return;
     }
-    if(!confirm("Confirmar o recebimento e a devolução desta ferramenta?")) return;
+    if(!confirm("Confirmar o recebimento e a devolução de todas as ferramentas deste contrato?")) return;
 
     const saldo=saldoDaLocacao(locacao);
     if(saldo<=0){mostrarToast("Esta locação já está quitada. Abra a devolução novamente.");return;}
@@ -3739,10 +3918,11 @@ function concluirFinalizacao(locacao){
     if(locacao.status!=="Ativa") return;
     locacao.status="Finalizada";
     locacao.devolvidaEm=dataHoje();
-    const ferramenta=ferramentas.find(f=>f.id===locacao.ferramentaId);
-    if(ferramenta?.status==="Alugada" &&
-       !locacoes.some(l=>l.id!==locacao.id && l.status==="Ativa" && l.ferramentaId===ferramenta.id)){
-        ferramenta.status="Disponível";
+    for(const ferramentaId of idsFerramentasDaLocacao(locacao)){
+        const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
+        if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(ferramentaId,locacao.id)){
+            ferramenta.status="Disponível";
+        }
     }
     const contrato=contratos.find(c=>c.locacaoId===locacao.id);
     if(contrato) contrato.status="Finalizado";
@@ -3750,7 +3930,7 @@ function concluirFinalizacao(locacao){
     salvarDados();
     fecharModal();
     atualizarTudo();
-    mostrarToast("Pagamento e devolução registrados. Locação finalizada.");
+    mostrarToast("Pagamento e devolução de todas as ferramentas registrados. Locação finalizada.");
 }
 
 
@@ -3759,12 +3939,16 @@ function excluirLocacao(id){
     const locacao = locacoes.find(l=>l.id===id);
     if(!locacao) return;
 
-    const ferramenta = ferramentas.find(f=>f.id===locacao.ferramentaId);
+    const ferramentasDaLocacao=idsFerramentasDaLocacao(locacao);
     locacoes = locacoes.filter(l=>l.id!==id);
     contratos = contratos.filter(c=>c.locacaoId!==id);
-    if(locacao.status==="Ativa" && ferramenta?.status==="Alugada" &&
-       !locacoes.some(l=>l.status==="Ativa" && l.ferramentaId===ferramenta.id)){
-        ferramenta.status="Disponível";
+    if(locacao.status==="Ativa"){
+        for(const ferramentaId of ferramentasDaLocacao){
+            const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
+            if(ferramenta?.status==="Alugada" && !ferramentaEmOutraLocacaoAtiva(ferramentaId)){
+                ferramenta.status="Disponível";
+            }
+        }
     }
 
     salvarDados();
@@ -3791,8 +3975,18 @@ function badgeStatusPagamento(locacao){
 
 
 function textoCobranca(tipo){
-    const nomes={ diaria:"Diária", semanal:"Semanal", mensal:"Mensal", personalizado:"Personalizado" };
+    const nomes={ diaria:"Diária", semanal:"Semanal", mensal:"Mensal", personalizado:"Personalizado", multipla:"Múltiplas" };
     return nomes[tipo] || tipo || "-";
+}
+
+function ferramentasLocacaoHtml(locacao,limite=4){
+    const itens=itensDaLocacao(locacao);
+    const visiveis=itens.slice(0,limite).map(item=>{
+        const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+        return `<div><strong>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong>${ferramenta?.codigo ? ` <small style="color:#6b7280;">(${escapeHtml(ferramenta.codigo)})</small>` : ""}</div>`;
+    }).join("");
+    const restantes=Math.max(0,itens.length-limite);
+    return visiveis+(restantes ? `<small style="color:#1d4ed8;">+ ${restantes} outra(s)</small>` : "") || "-";
 }
 
 
@@ -3802,11 +3996,13 @@ function renderLocacoes(){
 
     const lista = locacoes.filter(l=>{
         const cliente = clientes.find(c=>c.id===l.clienteId);
-        const ferramenta = ferramentas.find(f=>f.id===l.ferramentaId);
+        const buscaFerramenta=itensDaLocacao(l).some(item=>{
+            const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+            return ferramenta?.nome?.toLowerCase().includes(busca) || ferramenta?.codigo?.toLowerCase().includes(busca);
+        });
         return (
             cliente?.nome?.toLowerCase().includes(busca) ||
-            ferramenta?.nome?.toLowerCase().includes(busca) ||
-            ferramenta?.codigo?.toLowerCase().includes(busca)
+            buscaFerramenta
         );
     });
 
@@ -3817,15 +4013,15 @@ function renderLocacoes(){
 
     tbody.innerHTML=lista.slice().reverse().map(l=>{
         const cliente = clientes.find(c=>c.id===l.clienteId);
-        const ferramenta = ferramentas.find(f=>f.id===l.ferramentaId);
         const contrato = contratos.find(c=>c.locacaoId===l.id);
+        const quantidadeItens=itensDaLocacao(l).length;
 
         return `
             <tr>
                 <td><strong>${escapeHtml(cliente?.nome || "Cliente removido")}</strong></td>
                 <td>
-                    ${escapeHtml(ferramenta?.nome || "-")}<br>
-                    <small style="color:#6b7280;">${escapeHtml(ferramenta?.codigo || "")}</small>
+                    ${ferramentasLocacaoHtml(l)}
+                    ${quantidadeItens>1 ? `<small style="color:#1d4ed8;">${quantidadeItens} ferramentas no contrato</small>` : ""}
                 </td>
                 <td>${formatarData(l.retirada)}</td>
                 <td>${formatarData(l.devolucao)}${l.renovacoes ? `<br><small style="color:#92400e;">${l.renovacoes} renovação(ões) automática(s)</small>` : ""}</td>
@@ -3898,13 +4094,12 @@ function renderContratos(){
     tbody.innerHTML=contratos.slice().reverse().map(c=>{
         const locacao=locacoes.find(l=>l.id===c.locacaoId);
         const cliente=clientes.find(x=>x.id===locacao?.clienteId);
-        const ferramenta=ferramentas.find(x=>x.id===locacao?.ferramentaId);
 
         return `
             <tr>
                 <td><strong>Contrato #${escapeHtml(c.numero)}</strong></td>
                 <td>${escapeHtml(cliente?.nome || "-")}</td>
-                <td>${escapeHtml(ferramenta?.nome || "-")}</td>
+                <td>${locacao ? ferramentasLocacaoHtml(locacao,3) : "-"}</td>
                 <td>${formatarData(locacao?.retirada)}</td>
                 <td>${badgeStatusContrato(c.status)}</td>
                 <td>
@@ -3922,64 +4117,128 @@ function visualizarContrato(id){
     const locacao=locacoes.find(l=>l.id===contrato.locacaoId);
     if(!locacao) return;
     const cliente=clientes.find(c=>c.id===locacao.clienteId);
-    const ferramenta=ferramentas.find(f=>f.id===locacao.ferramentaId);
+    const itens=itensDaLocacao(locacao);
+    const classeCompacta=itens.length>=14 ? "contrato-ultracompacto" : itens.length>=9 ? "contrato-supercompacto" : itens.length>=5 ? "contrato-compacto" : "";
+    const numeroArquivo=String(contrato.numero || "contrato").replace(/[^a-zA-Z0-9_-]/g,"-");
+    const recebido=valorRecebidoLocacao(locacao);
+    const saldo=saldoDaLocacao(locacao);
+    const momento=locacao.momentoPagamento==="entrada" ? "No ato do contrato" : locacao.momentoPagamento==="devolucao" ? "Na devolução" : "Não informado";
+    const linhasItens=itens.map((item,index)=>{
+        const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+        const periodico=TIPOS_PERIODICOS.includes(item.tipoCobranca);
+        const detalhesCobranca=periodico
+            ? `${Number(item.periodosContratados || 1)} × ${formatarMoeda(item.valorPeriodo)}`
+            : "Valor combinado";
+        const renovacao=Number(item.renovacoes || 0)>0
+            ? `${Number(item.renovacoes)} renovação(ões)`
+            : item.renovacaoAutomatica && periodico ? "Renovação automática" : "Sem renovação";
+        return `<tr>
+            <td class="col-num">${index+1}</td>
+            <td class="col-equip"><strong>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong><small>Cód. ${escapeHtml(ferramenta?.codigo || "-")} · ${escapeHtml(ferramenta?.voltagem || "Sem voltagem")}</small></td>
+            <td class="col-cobranca">${escapeHtml(textoCobranca(item.tipoCobranca))}<small>${escapeHtml(renovacao)}</small></td>
+            <td class="col-periodo">${escapeHtml(detalhesCobranca)}</td>
+            <td class="col-devolucao">${escapeHtml(formatarData(item.devolucao))}<small>Retirada ${escapeHtml(formatarData(locacao.retirada))}</small></td>
+            <td class="col-valor"><strong>${formatarMoeda(item.valor)}</strong></td>
+        </tr>`;
+    }).join("");
+    const recebimentos=pagamentosDaLocacao(locacao).map(p=>
+        `${formatarData(p.data)} · ${p.forma || "Não informada"} · ${formatarMoeda(p.valor)}`
+    ).join(" | ");
 
     abrirModal(`Contrato #${contrato.numero}`,`
-        <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:15px;">
-            <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+        <div class="contrato-acoes no-print">
+            <button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>
+            <button class="btn btn-primary" onclick="imprimirContrato('${numeroArquivo}')">🖨️ Imprimir / Salvar PDF</button>
         </div>
 
-        <div class="contrato">
-            <h1>CONTRATO DE LOCAÇÃO DE EQUIPAMENTO</h1>
-            <div class="numero">Contrato nº ${escapeHtml(contrato.numero)}</div>
+        <article id="contratoImpressao" class="contrato ${classeCompacta}">
+            <header class="contrato-topo">
+                <div class="contrato-marca">${escapeHtml(config.nome || "Empresa locadora")}<small>Locação de ferramentas e equipamentos</small></div>
+                <div class="contrato-identificacao"><strong>CONTRATO Nº ${escapeHtml(contrato.numero)}</strong><span>Emitido em ${escapeHtml(formatarData((contrato.criadoEm || dataHoje()).slice(0,10)))}</span></div>
+            </header>
 
-            <h3>1. LOCADOR</h3>
-            <p><strong>${escapeHtml(config.nome || "Empresa")}</strong></p>
-            <p>CPF/CNPJ: ${escapeHtml(config.documento || "-")}</p>
-            <p>Telefone: ${escapeHtml(config.telefone || "-")}</p>
-            <p>Endereço: ${escapeHtml(config.endereco || "-")}</p>
-
-            <h3>2. LOCATÁRIO</h3>
-            <p><strong>${escapeHtml(cliente?.nome || "-")}</strong></p>
-            <p>CPF/CNPJ: ${escapeHtml(cliente?.documento || "-")}</p>
-            <p>Telefone: ${escapeHtml(cliente?.telefone || "-")}</p>
-            <p>Endereço: ${escapeHtml(montarEnderecoCliente(cliente))}</p>
-
-            <h3>3. EQUIPAMENTO</h3>
-            <p>Equipamento: <strong>${escapeHtml(ferramenta?.nome || "-")}</strong></p>
-            <p>Código: ${escapeHtml(ferramenta?.codigo || "-")}</p>
-            <p>Voltagem: ${escapeHtml(ferramenta?.voltagem || "-")}</p>
-
-            <h3>4. LOCAL DA LOCAÇÃO</h3>
-            <p>${escapeHtml(montarEnderecoLocacao(locacao.localLocacao))}</p>
-
-            <h3>5. PERÍODO E VALORES</h3>
-            <p>Retirada: <strong>${formatarData(locacao.retirada)}</strong></p>
-            <p>Devolução: <strong>${formatarData(locacao.devolucao)}</strong></p>
-            <p>Tipo de cobrança: <strong>${textoCobranca(locacao.tipoCobranca)}</strong></p>
-            ${locacao.periodosContratados ? `<p>Períodos contratados: <strong>${locacao.periodosContratados}</strong> · Valor por período: <strong>${formatarMoeda(locacao.valorPeriodo)}</strong></p>` : ""}
-            ${locacao.renovacaoAutomatica || locacao.renovacoes ? `<p>Renovação automática: <strong>${locacao.renovacaoAutomatica ? "Ativa" : "Desativada"}</strong> · Renovações realizadas: <strong>${Number(locacao.renovacoes || 0)}</strong>${locacao.devolucaoOriginal ? ` · Vencimento inicial: <strong>${formatarData(locacao.devolucaoOriginal)}</strong>` : ""}</p>` : ""}
-            <p>Valor da locação: <strong>${formatarMoeda(locacao.valor)}</strong></p>
-            <p>Caução: <strong>${formatarMoeda(locacao.caucao)}</strong></p>
-            <p>Pagamento previsto: <strong>${locacao.momentoPagamento==="entrada" ? "No ato do contrato" : locacao.momentoPagamento==="devolucao" ? "Na devolução" : "Não informado"}</strong></p>
-            <p>Situação: ${badgeStatusPagamento(locacao)}</p>
-            <p>Forma de pagamento: <strong>${escapeHtml(locacao.pagamento || "Não informada")}</strong></p>
-            ${valorRecebidoLocacao(locacao)>0 ? `<p>Total recebido: <strong>${formatarMoeda(valorRecebidoLocacao(locacao))}</strong> · Saldo: <strong>${formatarMoeda(saldoDaLocacao(locacao))}</strong></p>` : ""}
-            ${pagamentosDaLocacao(locacao).map(p=>`<p>Recebimento em ${escapeHtml(formatarData(p.data))}: ${formatarMoeda(p.valor)} (${escapeHtml(p.forma)})</p>`).join("")}
-            ${locacao.devolvidaEm ? `<p>Devolução realizada: <strong>${escapeHtml(formatarData(locacao.devolvidaEm))}</strong></p>` : ""}
-
-            <h3>6. TERMOS E CONDIÇÕES</h3>
-            <p style="white-space:pre-line;">${escapeHtml(config.termo || termoPadrao)}</p>
-
-            <h3>7. OBSERVAÇÕES</h3>
-            <p>${escapeHtml(locacao.observacoes || "Nenhuma observação.")}</p>
-
-            <div class="assinaturas">
-                <div class="assinatura">${escapeHtml(config.nome || "LOCADOR")}</div>
-                <div class="assinatura">${escapeHtml(cliente?.nome || "LOCATÁRIO")}</div>
+            <div class="contrato-titulo">
+                <h1>Contrato de locação de ferramentas e equipamentos</h1>
+                <p>Documento particular firmado entre as partes identificadas abaixo.</p>
             </div>
-        </div>
-    `);
+
+            <section class="contrato-blocos">
+                <div class="contrato-bloco">
+                    <h2>Locador</h2>
+                    <p><strong>${escapeHtml(config.nome || "Empresa")}</strong></p>
+                    <p>CPF/CNPJ: ${escapeHtml(config.documento || "-")}</p>
+                    <p>Telefone: ${escapeHtml(config.telefone || "-")}</p>
+                    <p>Endereço: ${escapeHtml(config.endereco || "-")}</p>
+                </div>
+                <div class="contrato-bloco">
+                    <h2>Locatário</h2>
+                    <p><strong>${escapeHtml(cliente?.nome || "Cliente não localizado")}</strong></p>
+                    <p>CPF/CNPJ: ${escapeHtml(cliente?.documento || "-")}</p>
+                    <p>Telefone: ${escapeHtml(cliente?.telefone || "-")}</p>
+                    <p>Endereço: ${escapeHtml(montarEnderecoCliente(cliente))}</p>
+                </div>
+            </section>
+
+            <section class="contrato-local">
+                <h2>Local de utilização / entrega</h2>
+                <p>${escapeHtml(montarEnderecoLocacao(locacao.localLocacao))}</p>
+            </section>
+
+            <section class="contrato-secao">
+                <h2>Ferramentas, períodos e valores</h2>
+                <table class="contrato-tabela">
+                    <thead><tr><th class="col-num">#</th><th class="col-equip">Ferramenta</th><th class="col-cobranca">Cobrança</th><th class="col-periodo">Qtd. / tarifa</th><th class="col-devolucao">Devolução prevista</th><th class="col-valor">Subtotal</th></tr></thead>
+                    <tbody>${linhasItens}</tbody>
+                </table>
+            </section>
+
+            <section class="contrato-resumo">
+                <div><small>Retirada</small><strong>${escapeHtml(formatarData(locacao.retirada))}</strong></div>
+                <div><small>Itens</small><strong>${itens.length} ferramenta${itens.length===1 ? "" : "s"}</strong></div>
+                <div><small>Total</small><strong>${formatarMoeda(locacao.valor)}</strong></div>
+                <div><small>Caução</small><strong>${formatarMoeda(locacao.caucao)}</strong></div>
+                <div><small>Saldo</small><strong>${formatarMoeda(saldo)}</strong></div>
+            </section>
+
+            <section class="contrato-secao">
+                <h2>Pagamento e situação</h2>
+                <p>Pagamento previsto: <strong>${escapeHtml(momento)}</strong> · Situação: <strong>${escapeHtml(locacao.pagamentoStatus || "Não informado")}</strong> · Recebido: <strong>${formatarMoeda(recebido)}</strong>${locacao.devolvidaEm ? ` · Devolvido em: <strong>${escapeHtml(formatarData(locacao.devolvidaEm))}</strong>` : ""}</p>
+                ${recebimentos ? `<p><small>Recebimentos: ${escapeHtml(recebimentos)}</small></p>` : ""}
+            </section>
+
+            <section class="contrato-secao">
+                <h2>Termos e condições</h2>
+                <div class="contrato-termos">${escapeHtml(config.termo || termoPadrao)}</div>
+            </section>
+
+            <section class="contrato-observacoes">
+                <h2>Observações</h2>
+                <p>${escapeHtml(locacao.observacoes || "Nenhuma observação registrada.")}</p>
+            </section>
+
+            <section class="assinaturas">
+                <div class="assinatura"><strong>${escapeHtml(config.nome || "LOCADOR")}</strong>LOCADOR</div>
+                <div class="assinatura"><strong>${escapeHtml(cliente?.nome || "LOCATÁRIO")}</strong>LOCATÁRIO</div>
+            </section>
+
+            <footer class="contrato-rodape"><span>Contrato nº ${escapeHtml(contrato.numero)}</span><span>${itens.length} item(ns) · Total ${formatarMoeda(locacao.valor)}</span></footer>
+        </article>
+    `,"modal-contrato");
+}
+
+function imprimirContrato(numero){
+    const tituloAnterior=document.title;
+    let restaurado=false;
+    const restaurar=()=>{
+        if(restaurado) return;
+        restaurado=true;
+        document.title=tituloAnterior;
+        window.removeEventListener("afterprint",restaurar);
+    };
+    document.title=`Contrato-${numero}`;
+    window.addEventListener("afterprint",restaurar);
+    window.print();
+    setTimeout(restaurar,1500);
 }
 
 
@@ -4027,19 +4286,29 @@ function liberarManutencao(id){
    FINANCEIRO
 ===================================================== */
 
-function cobrancasDaLocacao(locacao){
-    const inicial=Number(locacao.periodosContratados),valorInicial=Number(locacao.valorInicial);
-    if(!TIPOS_PERIODICOS.includes(locacao.tipoCobranca) || !Number.isInteger(inicial) || inicial<1 ||
+function cobrancasDoItemLocacao(locacao,item){
+    const inicial=Number(item.periodosContratados),valorInicial=Number(item.valorInicial);
+    if(!TIPOS_PERIODICOS.includes(item.tipoCobranca) || !Number.isInteger(inicial) || inicial<1 ||
        !Number.isFinite(valorInicial) || !dataCalendarioUTC(locacao.retirada)){
-        return [{data:locacao.retirada,valor:Number(locacao.valor || 0)}];
+        return [{data:locacao.retirada,valor:Number(item.valor || 0),itemId:item.id,ferramentaId:item.ferramentaId}];
     }
-    const cobrancas=[{data:locacao.retirada,valor:valorInicial}];
-    const renovacoes=Math.min(3650,Math.max(0,Number(locacao.renovacoes || 0)));
+    const cobrancas=[{data:locacao.retirada,valor:valorInicial,itemId:item.id,ferramentaId:item.ferramentaId}];
+    const renovacoes=Math.min(3650,Math.max(0,Number(item.renovacoes || 0)));
     for(let i=1;i<=renovacoes;i++){
-        const vencimento=fimDoPeriodo(locacao.retirada,locacao.tipoCobranca,inicial+i-1);
-        if(vencimento) cobrancas.push({data:proximoDia(vencimento),valor:Number(locacao.valorPeriodo || 0)});
+        const vencimento=fimDoPeriodo(locacao.retirada,item.tipoCobranca,inicial+i-1);
+        if(vencimento) cobrancas.push({data:proximoDia(vencimento),valor:Number(item.valorPeriodo || 0),itemId:item.id,ferramentaId:item.ferramentaId});
     }
     return cobrancas;
+}
+
+function cobrancasDaLocacao(locacao){
+    return itensDaLocacao(locacao).flatMap(item=>cobrancasDoItemLocacao(locacao,item));
+}
+
+function contratadoItemNoPeriodo(locacao,item,mes){
+    return arredondarValor(cobrancasDoItemLocacao(locacao,item)
+        .filter(c=>!mes || c.data?.slice(0,7)===mes)
+        .reduce((s,c)=>s+Number(c.valor || 0),0));
 }
 
 function contratadoNoPeriodo(locacao,mes){
@@ -4082,7 +4351,6 @@ function atualizarFinanceiro(){
     document.getElementById("finQuantidadeHistorico").textContent=`(${historico.length} registro${historico.length===1 ? "" : "s"})`;
     document.getElementById("finHistorico").innerHTML=historico.length ? historico.map(l=>{
         const cliente=clientes.find(c=>c.id===l.clienteId);
-        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
         const contrato=contratos.find(c=>c.locacaoId===l.id);
         const conhecido=["Pago","Parcial","Pendente"].includes(l.pagamentoStatus);
         const recebidoLocacao=valorRecebidoLocacao(l);
@@ -4090,7 +4358,7 @@ function atualizarFinanceiro(){
             <td>${escapeHtml(formatarData(l.retirada))}</td>
             <td>${escapeHtml(formatarData(l.devolucao))}</td>
             <td>${escapeHtml(cliente?.nome || "Cliente não localizado")}</td>
-            <td>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</td>
+            <td>${ferramentasLocacaoHtml(l,3)}</td>
             <td>${formatarMoeda(contratadoNoPeriodo(l,mes))}${mes && l.renovacoes ? `<br><small>Total acumulado: ${formatarMoeda(l.valor)}</small>` : ""}</td>
             <td>${conhecido ? formatarMoeda(recebidoLocacao) : "—"}</td>
             <td>${conhecido ? formatarMoeda(Math.max(0,Number(l.valor || 0)-recebidoLocacao)) : "—"}</td>
@@ -4106,10 +4374,9 @@ function atualizarFinanceiro(){
     document.getElementById("finQuantidadeRecebimentos").textContent=`(${pagamentos.length} registro${pagamentos.length===1 ? "" : "s"})`;
     document.getElementById("finRecebimentos").innerHTML=pagamentos.length ? pagamentos.map(({locacao:l,pagamento:p})=>{
         const cliente=clientes.find(c=>c.id===l.clienteId);
-        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
         const contrato=contratos.find(c=>c.locacaoId===l.id);
         return `<tr><td>${escapeHtml(formatarData(p.data))}</td>
-            <td>${escapeHtml(cliente?.nome || "-")}</td><td>${escapeHtml(ferramenta?.nome || "-")}</td>
+            <td>${escapeHtml(cliente?.nome || "-")}</td><td>${ferramentasLocacaoHtml(l,3)}</td>
             <td>${escapeHtml(formatarData(l.retirada))}</td><td>${escapeHtml(p.forma || "-")}</td>
             <td>${formatarMoeda(p.valor)}</td>
             <td>${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">#${escapeHtml(contrato.numero)}</button>` : "-"}</td></tr>`;
@@ -4144,7 +4411,7 @@ function exportarFinanceiroCsv(){
             const conhecido=["Pago","Parcial","Pendente"].includes(l.pagamentoStatus);
             const recebido=valorRecebidoLocacao(l);
             return [l.retirada,l.devolucao,clientes.find(c=>c.id===l.clienteId)?.nome || "",
-                ferramentas.find(f=>f.id===l.ferramentaId)?.nome || "",contratadoNoPeriodo(l,mes),
+                nomesFerramentasLocacao(l),contratadoNoPeriodo(l,mes),
                 Number(l.valor || 0),Number(l.renovacoes || 0),Number(l.caucao || 0),conhecido ? recebido : "",
                 conhecido ? Math.max(0,Number(l.valor || 0)-recebido) : "",
                 l.pagamentoStatus || "Não informado",l.pagamento || "",l.dataPagamento || "",l.status || ""];
@@ -4238,11 +4505,17 @@ function renderGraficoSituacao(periodo){
 function renderRankingFinanceiro(periodo,chave,cadastros,elementoId,mes){
     const agrupados=new Map();
     periodo.forEach(l=>{
-        const id=l[chave];
-        const item=agrupados.get(id) || {quantidade:0,valor:0};
-        item.quantidade++;
-        item.valor+=contratadoNoPeriodo(l,mes);
-        agrupados.set(id,item);
+        const alvos=chave==="ferramentaId"
+            ? itensDaLocacao(l).filter(item=>cobrancasDoItemLocacao(l,item).some(c=>!mes || c.data?.slice(0,7)===mes))
+                .map(item=>({id:item.ferramentaId,valor:contratadoItemNoPeriodo(l,item,mes)}))
+            : [{id:l[chave],valor:contratadoNoPeriodo(l,mes)}];
+        for(const alvo of alvos){
+            if(!alvo.id) continue;
+            const item=agrupados.get(alvo.id) || {quantidade:0,valor:0};
+            item.quantidade++;
+            item.valor+=alvo.valor;
+            agrupados.set(alvo.id,item);
+        }
     });
     const ranking=[...agrupados.entries()].sort((a,b)=>b[1].quantidade-a[1].quantidade || b[1].valor-a[1].valor).slice(0,5);
     const maximo=ranking[0]?.[1].quantidade || 1;
@@ -4282,11 +4555,10 @@ function atualizarDashboard(){
 
     tbody.innerHTML=recentes.map(l=>{
         const cliente=clientes.find(c=>c.id===l.clienteId);
-        const ferramenta=ferramentas.find(f=>f.id===l.ferramentaId);
         return `
             <tr>
                 <td>${escapeHtml(cliente?.nome || "-")}</td>
-                <td>${escapeHtml(ferramenta?.nome || "-")}</td>
+                <td>${ferramentasLocacaoHtml(l,3)}</td>
                 <td>${textoCobranca(l.tipoCobranca)}</td>
                 <td>${formatarMoeda(l.valor)}</td>
                 <td>${badgeStatusLocacao(l.status)}</td>
