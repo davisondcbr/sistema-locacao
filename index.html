@@ -853,15 +853,16 @@ textarea{
    CONTRATO A4
 ========================= */
 
-.contrato-acoes{display:flex;justify-content:flex-end;gap:8px;margin-bottom:15px;}
+.contrato-acoes{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:15px;}
+.contrato-a4-status{margin-right:auto;color:#475569;font-size:12px;font-weight:700;background:#f8fafc;border:1px solid #cbd5e1;border-radius:999px;padding:7px 10px;}
 .contrato{
     --doc-fonte:10.5px;
     --doc-espaco:10px;
     background:#fff;
-    width:210mm;
+    width:196mm;
     max-width:100%;
-    min-height:297mm;
-    padding:12mm;
+    min-height:283mm;
+    padding:10mm;
     margin:auto;
     color:#172033;
     line-height:1.32;
@@ -965,6 +966,7 @@ textarea{
 
 @media print{
     html,body{background:#fff!important;margin:0!important;padding:0!important;}
+    body>*:not(#modalOverlay){display:none!important;}
     body *{visibility:hidden!important;}
     #modalOverlay{display:block!important;position:static!important;inset:auto!important;padding:0!important;background:transparent!important;}
     #modalOverlay .modal{display:block!important;position:static!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;}
@@ -972,7 +974,7 @@ textarea{
     #modalOverlay .modal-header,.contrato-acoes{display:none!important;}
     #contratoImpressao,#contratoImpressao *{visibility:visible!important;}
     #contratoImpressao{
-        position:absolute!important;
+        position:static!important;
         left:0!important;
         top:0!important;
         width:196mm!important;
@@ -985,7 +987,11 @@ textarea{
         -webkit-print-color-adjust:exact!important;
         print-color-adjust:exact!important;
     }
-    #contratoImpressao .contrato-secao,#contratoImpressao tr,#contratoImpressao .assinaturas{break-inside:avoid;page-break-inside:avoid;}
+    #contratoImpressao.contrato-compacto{padding:5mm!important;}
+    #contratoImpressao.contrato-supercompacto{padding:4mm!important;}
+    #contratoImpressao.contrato-ultracompacto{padding:3.5mm!important;}
+    #contratoImpressao .contrato-secao:not(.contrato-itens-secao),#contratoImpressao tr,#contratoImpressao .assinaturas{break-inside:avoid;page-break-inside:avoid;}
+    #contratoImpressao .contrato-itens-secao{break-inside:auto;page-break-inside:auto;}
     #contratoImpressao thead{display:table-header-group;}
 }
 
@@ -3230,6 +3236,42 @@ function opcoesFerramentasLocacao(selecionado="",atual=null){
         .map(f=>`<option value="${escapeHtml(f.id)}" ${f.id===selecionado ? "selected" : ""}>${escapeHtml(f.nome)} — ${escapeHtml(f.codigo || "sem código")}</option>`).join("");
 }
 
+function referenciaCalculoLocacao(locacaoAtual=null){
+    if(locacaoAtual?.status==="Finalizada"){
+        const referencia=locacaoAtual.devolvidaEm || locacaoAtual.devolucao;
+        if(dataCalendarioUTC(referencia)) return referencia;
+    }
+    return dataHoje();
+}
+
+function marcarItemParaRecalculo(chave){
+    const linha=document.getElementById(`locacaoItem_${chave}`);
+    if(linha) linha.dataset.recalcular="1";
+}
+
+function recalcularItemAlterado(chave,forcarTarifa=false){
+    marcarItemParaRecalculo(chave);
+    recalcularItemLocacao(chave,true,forcarTarifa);
+}
+
+function alterarCampoManualItem(chave){
+    marcarItemParaRecalculo(chave);
+    atualizarTotalLocacao();
+}
+
+function alterarRenovacaoItem(chave){
+    const linha=document.getElementById(`locacaoItem_${chave}`);
+    if(linha) linha.dataset.renovacaoAlterada="1";
+    recalcularItemLocacao(chave,linha?.dataset.recalcular==="1",false);
+}
+
+function recalcularItensPorNovaRetirada(){
+    document.querySelectorAll("#locacaoItens .locacao-item").forEach(linha=>{
+        marcarItemParaRecalculo(linha.dataset.chave);
+        recalcularItemLocacao(linha.dataset.chave,true,false);
+    });
+}
+
 function adicionarItemLocacao(dados={}){
     const container=document.getElementById("locacaoItens");
     if(!container) return;
@@ -3241,45 +3283,44 @@ function adicionarItemLocacao(dados={}){
             renovacaoAutomatica:true,renovacoes:0,legado:false});
     }
     const chave=`li${++sequenciaItemLocacao}`;
-    const travado=Number(item.renovacoes || 0)>0 || atual?.status==="Finalizada";
     itensOriginaisLocacao.set(chave,JSON.parse(JSON.stringify(item)));
     container.insertAdjacentHTML("beforeend",`
-        <div class="locacao-item" id="locacaoItem_${chave}" data-chave="${chave}" data-id-item="${escapeHtml(item.id)}" data-travado="${travado ? "1" : "0"}">
+        <div class="locacao-item" id="locacaoItem_${chave}" data-chave="${chave}" data-id-item="${escapeHtml(item.id)}" data-recalcular="${dados.ferramentaId ? "0" : "1"}">
             <div class="locacao-item-cabecalho">
                 <strong class="locacao-item-titulo">Ferramenta</strong>
-                <button type="button" class="btn btn-danger btn-sm locacao-item-remover" onclick="removerItemLocacao('${chave}')" ${travado ? "disabled" : ""}>Remover</button>
+                <button type="button" class="btn btn-danger btn-sm locacao-item-remover" onclick="removerItemLocacao('${chave}')">Remover</button>
             </div>
             <div class="locacao-item-grid">
                 <div class="form-group campo-ferramenta">
                     <label>Ferramenta *</label>
-                    <select id="itemFerramenta_${chave}" onchange="alterarFerramentaItem('${chave}')" ${travado ? "disabled" : ""}>
+                    <select id="itemFerramenta_${chave}" onchange="alterarFerramentaItem('${chave}')">
                         <option value="">Selecione...</option>${opcoesFerramentasLocacao(item.ferramentaId,atual)}
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Cobrança *</label>
-                    <select id="itemTipo_${chave}" onchange="recalcularItemLocacao('${chave}',true,true)" ${travado ? "disabled" : ""}>
+                    <select id="itemTipo_${chave}" onchange="recalcularItemAlterado('${chave}',true)">
                         ${[["diaria","Diária"],["semanal","Semanal"],["mensal","Mensal"],["personalizado","Personalizado"]].map(([valor,nome])=>`<option value="${valor}" ${item.tipoCobranca===valor ? "selected" : ""}>${nome}</option>`).join("")}
                     </select>
                 </div>
                 <div class="form-group" id="itemGrupoPeriodos_${chave}">
                     <label>Períodos *</label>
-                    <input id="itemPeriodos_${chave}" type="number" min="1" max="3650" step="1" value="${item.periodosContratados || 1}" oninput="recalcularItemLocacao('${chave}')" ${travado ? "disabled" : ""}>
+                    <input id="itemPeriodos_${chave}" type="number" min="1" max="3650" step="1" value="${item.periodosContratados || 1}" oninput="recalcularItemAlterado('${chave}')">
                 </div>
                 <div class="form-group">
-                    <label>Tarifa</label>
-                    <input id="itemTarifa_${chave}" type="number" step="0.01" value="${Number(item.valorPeriodo || 0).toFixed(2)}" readonly>
+                    <label>Tarifa do contrato</label>
+                    <input id="itemTarifa_${chave}" type="number" min="0" step="0.01" value="${Number(item.valorPeriodo || 0).toFixed(2)}" oninput="recalcularItemAlterado('${chave}')">
                 </div>
                 <div class="form-group">
                     <label>Devolução prevista *</label>
-                    <input id="itemDevolucao_${chave}" type="date" value="${escapeHtml(item.devolucao || "")}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) || travado ? "readonly" : ""} onchange="atualizarTotalLocacao()">
+                    <input id="itemDevolucao_${chave}" type="date" value="${escapeHtml(item.devolucao || "")}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) ? "readonly" : ""} onchange="alterarCampoManualItem('${chave}')">
                 </div>
                 <div class="form-group">
                     <label>Subtotal *</label>
-                    <input id="itemValor_${chave}" type="number" min="0" step="0.01" value="${Number(item.valor || 0).toFixed(2)}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) || travado ? "readonly" : ""} oninput="atualizarTotalLocacao()">
+                    <input id="itemValor_${chave}" type="number" min="0" step="0.01" value="${Number(item.valor || 0).toFixed(2)}" ${TIPOS_PERIODICOS.includes(item.tipoCobranca) ? "readonly" : ""} oninput="alterarCampoManualItem('${chave}')">
                 </div>
             </div>
-            <label style="margin:3px 0 0;"><input id="itemRenovacao_${chave}" type="checkbox" ${item.renovacaoAutomatica ? "checked" : ""} onchange="recalcularItemLocacao('${chave}')" ${!TIPOS_PERIODICOS.includes(item.tipoCobranca) || atual?.status==="Finalizada" ? "disabled" : ""}> Renovar este item automaticamente após o vencimento</label>
+            <label style="margin:3px 0 0;"><input id="itemRenovacao_${chave}" type="checkbox" ${item.renovacaoAutomatica ? "checked" : ""} onchange="alterarRenovacaoItem('${chave}')" ${!TIPOS_PERIODICOS.includes(item.tipoCobranca) ? "disabled" : ""}> Renovar este item automaticamente após o vencimento</label>
             <small class="locacao-item-resumo" id="itemResumo_${chave}"></small>
         </div>`);
     recalcularItemLocacao(chave,!dados.ferramentaId,false);
@@ -3292,13 +3333,13 @@ function atualizarBotoesItensLocacao(){
         const titulo=linha.querySelector(".locacao-item-titulo");
         if(titulo) titulo.textContent=`Ferramenta ${index+1}`;
         const botao=linha.querySelector(".locacao-item-remover");
-        if(botao) botao.disabled=linhas.length===1 || linha.dataset.travado==="1";
+        if(botao) botao.disabled=linhas.length===1;
     });
 }
 
 function removerItemLocacao(chave){
     const linha=document.getElementById(`locacaoItem_${chave}`);
-    if(!linha || linha.dataset.travado==="1") return;
+    if(!linha) return;
     if(document.querySelectorAll("#locacaoItens .locacao-item").length<=1){mostrarToast("A locação precisa ter pelo menos uma ferramenta.");return;}
     linha.remove();
     itensOriginaisLocacao.delete(chave);
@@ -3306,7 +3347,7 @@ function removerItemLocacao(chave){
     atualizarTotalLocacao();
 }
 
-function alterarFerramentaItem(chave){recalcularItemLocacao(chave,true,true);}
+function alterarFerramentaItem(chave){recalcularItemAlterado(chave,true);}
 
 function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     const linha=document.getElementById(`locacaoItem_${chave}`);
@@ -3324,14 +3365,20 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     const original=itensOriginaisLocacao.get(chave);
     const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
     const periodico=TIPOS_PERIODICOS.includes(tipo);
-    const travado=linha.dataset.travado==="1";
     grupoPeriodos.hidden=!periodico;
-    auto.disabled=!periodico || (locacaoEditando && locacoes.find(l=>l.id===locacaoEditando)?.status==="Finalizada");
+    auto.disabled=!periodico;
     if(!periodico) auto.checked=false;
-    devolucaoCampo.readOnly=periodico || travado;
-    valorCampo.readOnly=periodico || travado;
-    if(travado){
-        resumo.textContent=`Item já renovado ${Number(original?.renovacoes || 0)} vez(es). Dados financeiros preservados; apenas as próximas renovações podem ser interrompidas.`;
+    tarifaCampo.readOnly=!periodico;
+    devolucaoCampo.readOnly=periodico;
+    valorCampo.readOnly=periodico;
+    if(!recalcular && original?.ferramentaId && linha.dataset.recalcular!=="1"){
+        if(periodico){
+            resumo.textContent=Number(original.renovacoes || 0)>0
+                ? `Registro salvo com ${Number(original.renovacoes)} renovação(ões). Você pode corrigir os campos; os cálculos serão refeitos somente se alterar ferramenta, cobrança, períodos ou retirada.`
+                : `${Number(original.periodosContratados || 1)} período(s) salvos. Você pode corrigir qualquer informação deste item.`;
+        }else{
+            resumo.textContent="Valor personalizado salvo. Você pode corrigir a devolução e o subtotal.";
+        }
         atualizarTotalLocacao();
         return;
     }
@@ -3358,11 +3405,13 @@ function recalcularItemLocacao(chave,recalcular=true,forcarTarifa=false){
     }
     let texto=tarifa>0 && devolucao ? `${periodos} período(s) × ${formatarMoeda(tarifa)}. Vencimento: ${formatarData(devolucao)}.` :
         "Selecione uma ferramenta com preço cadastrado para esta modalidade.";
-    if(auto.checked && tarifa>0 && devolucao && dataHoje()>devolucao){
+    const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
+    const referencia=referenciaCalculoLocacao(atual);
+    if(auto.checked && tarifa>0 && devolucao && referencia>devolucao){
         const simulado={tipoCobranca:tipo,periodosContratados:periodos,valorPeriodo:tarifa,
             valorInicial:inicial,valor:inicial,devolucao,devolucaoOriginal:devolucao,
             renovacaoAutomatica:true,renovacoes:0};
-        renovarItemLocacao(simulado,retirada,dataHoje());
+        renovarItemLocacao(simulado,retirada,referencia);
         valorCampo.value=Number(simulado.valor).toFixed(2);
         devolucaoCampo.value=simulado.devolucao;
         texto+=` Hoje: ${simulado.renovacoes} renovação(ões), subtotal ${formatarMoeda(simulado.valor)}, próxima devolução ${formatarData(simulado.devolucao)}.`;
@@ -3413,7 +3462,7 @@ function abrirNovaLocacao(id=null){
 
             <div class="form-group">
                 <label>Data de retirada *</label>
-                <input id="locacaoRetirada" type="date" value="${dataHoje()}" onchange="atualizarTodosItensLocacao()" ${atual && (atual.status==="Finalizada" || itensDaLocacao(atual).some(item=>Number(item.renovacoes || 0)>0)) ? "readonly" : ""}>
+                <input id="locacaoRetirada" type="date" value="${dataHoje()}" onchange="recalcularItensPorNovaRetirada()">
             </div>
 
             <div class="form-group">
@@ -3422,9 +3471,9 @@ function abrirNovaLocacao(id=null){
             </div>
 
             <div class="form-group full">
-                <div class="info-box">Adicione todas as ferramentas deste cliente. Cada item pode ter cobrança diária, semanal, mensal ou personalizada e uma devolução própria.</div>
+                <div class="info-box">${atual ? "Modo de correção: você pode trocar, adicionar ou remover ferramentas e corrigir cobrança, períodos, retirada e valores. Ao salvar, o mesmo contrato será atualizado e você poderá gerar outro PDF." : "Adicione todas as ferramentas deste cliente. Cada item pode ter cobrança diária, semanal, mensal ou personalizada e uma devolução própria."}</div>
                 <div class="locacao-itens" id="locacaoItens"></div>
-                <button type="button" class="btn btn-secondary" style="margin-top:12px;" onclick="adicionarItemLocacao()" ${atual?.status==="Finalizada" ? "disabled" : ""}>＋ Adicionar outra ferramenta</button>
+                <button type="button" class="btn btn-secondary" style="margin-top:12px;" onclick="adicionarItemLocacao()">＋ Adicionar outra ferramenta</button>
             </div>
 
             <div class="form-group full"><div class="locacao-total"><span>Total atualizado do contrato</span><strong id="locacaoValorTotal">R$ 0,00</strong></div></div>
@@ -3525,7 +3574,8 @@ function abrirNovaLocacao(id=null){
         </div>
         <div class="form-actions">
             <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="salvarLocacao()">${atual ? '💾 Salvar alterações' : '📦 Criar locação'}</button>
+            <button class="btn btn-primary" onclick="salvarLocacao(false)">${atual ? '💾 Salvar alterações' : '📦 Criar locação'}</button>
+            <button class="btn btn-success" onclick="salvarLocacao(true)">${atual ? '📄 Salvar e abrir novo PDF' : '📄 Criar e abrir contrato'}</button>
         </div>
     `,"modal-larga");
 
@@ -3657,12 +3707,13 @@ function coletarItensFormulario(retirada){
         const valorInformado=Number(document.getElementById(`itemValor_${chave}`).value);
         const renovacao=document.getElementById(`itemRenovacao_${chave}`).checked;
         const original=itensOriginaisLocacao.get(chave);
-        const travado=linha.dataset.travado==="1";
+        const precisaRecalcular=linha.dataset.recalcular==="1" || !original?.ferramentaId;
         if(!ferramentas.some(f=>f.id===ferramentaId)) throw new Error(`Selecione a ferramenta do item ${index+1}.`);
         if(usados.has(ferramentaId)) throw new Error("A mesma ferramenta não pode aparecer duas vezes no contrato.");
         usados.add(ferramentaId);
-        if(travado && original){
-            return {...original,id:linha.dataset.idItem || original.id,renovacaoAutomatica:TIPOS_PERIODICOS.includes(original.tipoCobranca) && renovacao};
+        if(original && !precisaRecalcular){
+            return {...original,id:linha.dataset.idItem || original.id,
+                renovacaoAutomatica:TIPOS_PERIODICOS.includes(original.tipoCobranca) && renovacao};
         }
         if(!TIPOS_PERIODICOS.includes(tipo)){
             if(!dataCalendarioUTC(devolucaoInformada) || devolucaoInformada<retirada)
@@ -3683,11 +3734,16 @@ function coletarItensFormulario(retirada){
         const devolucao=fimDoPeriodo(retirada,tipo,periodos);
         if(!devolucao) throw new Error(`Não foi possível calcular a devolução do item ${index+1}.`);
         const inicial=arredondarValor(taxa*periodos);
-        return {
+        const novoItem={
             id:linha.dataset.idItem || gerarId(),ferramentaId,tipoCobranca:tipo,
             periodosContratados:periodos,valorPeriodo:taxa,valorInicial:inicial,valor:inicial,
             devolucao,devolucaoOriginal:devolucao,renovacaoAutomatica:renovacao,renovacoes:0
         };
+        if(renovacao){
+            const atual=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
+            renovarItemLocacao(novoItem,retirada,referenciaCalculoLocacao(atual));
+        }
+        return novoItem;
     });
 }
 
@@ -3695,7 +3751,7 @@ function ferramentaEmOutraLocacaoAtiva(ferramentaId,ignorarLocacaoId=""){
     return locacoes.some(l=>l.id!==ignorarLocacaoId && l.status==="Ativa" && locacaoUsaFerramenta(l,ferramentaId));
 }
 
-function salvarLocacao(){
+function salvarLocacao(abrirContratoDepois=false){
     const anterior=locacaoEditando ? locacoes.find(l=>l.id===locacaoEditando) : null;
     if(locacaoEditando && !anterior){ mostrarToast("Locação não encontrada."); return; }
     const clienteId = document.getElementById("locacaoCliente").value;
@@ -3807,16 +3863,19 @@ function salvarLocacao(){
     }
 
     let numeroContrato="";
+    let contratoId=contratos.find(c=>c.locacaoId===locacao.id)?.id || "";
     if(anterior){
         const index=locacoes.findIndex(l=>l.id===anterior.id);
         locacoes[index]=locacao;
     }else{
         locacoes.push(locacao);
         numeroContrato=gerarNumeroContrato();
-        contratos.push({
+        const novoContrato={
             id:gerarId(),numero:numeroContrato,locacaoId:locacao.id,
             status:"Ativo",criadoEm:new Date().toISOString()
-        });
+        };
+        contratos.push(novoContrato);
+        contratoId=novoContrato.id;
     }
     const idsNovos=new Set(locacao.status==="Ativa" ? idsFerramentasDaLocacao(locacao) : []);
     for(const id of idsAnteriores){
@@ -3832,7 +3891,8 @@ function salvarLocacao(){
     salvarDados();
     fecharModal();
     atualizarTudo();
-    mostrarToast(anterior ? "Locação atualizada." : `Locação criada. Contrato nº ${numeroContrato}.`);
+    mostrarToast(anterior ? "Locação e contrato atualizados." : `Locação criada. Contrato nº ${numeroContrato}.`);
+    if(abrirContratoDepois && contratoId) visualizarContrato(contratoId);
 }
 
 
@@ -4103,7 +4163,10 @@ function renderContratos(){
                 <td>${formatarData(locacao?.retirada)}</td>
                 <td>${badgeStatusContrato(c.status)}</td>
                 <td>
-                    <button class="btn btn-primary btn-sm" onclick="visualizarContrato('${c.id}')">Visualizar</button>
+                    <div class="actions">
+                        ${locacao ? `<button class="btn btn-secondary btn-sm" onclick="editarLocacao('${locacao.id}')">Editar locação</button>` : ""}
+                        <button class="btn btn-primary btn-sm" onclick="visualizarContrato('${c.id}')">Visualizar / PDF</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -4122,6 +4185,8 @@ function visualizarContrato(id){
     const numeroArquivo=String(contrato.numero || "contrato").replace(/[^a-zA-Z0-9_-]/g,"-");
     const recebido=valorRecebidoLocacao(locacao);
     const saldo=saldoDaLocacao(locacao);
+    const dataEmissao=formatarData(String(contrato.criadoEm || dataHoje()).slice(0,10));
+    const dataRevisao=locacao.atualizadaEm ? formatarData(String(locacao.atualizadaEm).slice(0,10)) : "";
     const momento=locacao.momentoPagamento==="entrada" ? "No ato do contrato" : locacao.momentoPagamento==="devolucao" ? "Na devolução" : "Não informado";
     const linhasItens=itens.map((item,index)=>{
         const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
@@ -4147,14 +4212,16 @@ function visualizarContrato(id){
 
     abrirModal(`Contrato #${contrato.numero}`,`
         <div class="contrato-acoes no-print">
+            <span class="contrato-a4-status" id="contratoA4Status">Ajustando o contrato para A4...</span>
             <button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>
+            <button class="btn btn-secondary" onclick="fecharModal();editarLocacao('${locacao.id}')">✏️ Editar locação</button>
             <button class="btn btn-primary" onclick="imprimirContrato('${numeroArquivo}')">🖨️ Imprimir / Salvar PDF</button>
         </div>
 
         <article id="contratoImpressao" class="contrato ${classeCompacta}">
             <header class="contrato-topo">
                 <div class="contrato-marca">${escapeHtml(config.nome || "Empresa locadora")}<small>Locação de ferramentas e equipamentos</small></div>
-                <div class="contrato-identificacao"><strong>CONTRATO Nº ${escapeHtml(contrato.numero)}</strong><span>Emitido em ${escapeHtml(formatarData((contrato.criadoEm || dataHoje()).slice(0,10)))}</span></div>
+                <div class="contrato-identificacao"><strong>CONTRATO Nº ${escapeHtml(contrato.numero)}</strong><span>Emitido em ${escapeHtml(dataEmissao)}${dataRevisao ? ` · Revisado em ${escapeHtml(dataRevisao)}` : ""}</span></div>
             </header>
 
             <div class="contrato-titulo">
@@ -4184,7 +4251,7 @@ function visualizarContrato(id){
                 <p>${escapeHtml(montarEnderecoLocacao(locacao.localLocacao))}</p>
             </section>
 
-            <section class="contrato-secao">
+            <section class="contrato-secao contrato-itens-secao">
                 <h2>Ferramentas, períodos e valores</h2>
                 <table class="contrato-tabela">
                     <thead><tr><th class="col-num">#</th><th class="col-equip">Ferramenta</th><th class="col-cobranca">Cobrança</th><th class="col-periodo">Qtd. / tarifa</th><th class="col-devolucao">Devolução prevista</th><th class="col-valor">Subtotal</th></tr></thead>
@@ -4224,9 +4291,42 @@ function visualizarContrato(id){
             <footer class="contrato-rodape"><span>Contrato nº ${escapeHtml(contrato.numero)}</span><span>${itens.length} item(ns) · Total ${formatarMoeda(locacao.valor)}</span></footer>
         </article>
     `,"modal-contrato");
+    ajustarContratoA4();
+}
+
+function ajustarContratoA4(){
+    const contrato=document.getElementById("contratoImpressao");
+    const status=document.getElementById("contratoA4Status");
+    if(!contrato || !contrato.classList) return null;
+    const classes=["contrato-compacto","contrato-supercompacto","contrato-ultracompacto"];
+    let nivel=contrato.classList.contains(classes[2]) ? 3 : contrato.classList.contains(classes[1]) ? 2 : contrato.classList.contains(classes[0]) ? 1 : 0;
+    const aplicarNivel=valor=>{
+        classes.forEach(classe=>contrato.classList.remove(classe));
+        if(valor>0) contrato.classList.add(classes[valor-1]);
+    };
+    const minHeightAnterior=contrato.style.minHeight;
+    contrato.style.minHeight="0";
+    aplicarNivel(nivel);
+    const limiteUmaPagina=Math.round(283*96/25.4);
+    while(Number.isFinite(contrato.scrollHeight) && contrato.scrollHeight>limiteUmaPagina && nivel<3){
+        nivel++;
+        aplicarNivel(nivel);
+    }
+    const alturaFinal=Number(contrato.scrollHeight || 0);
+    contrato.style.minHeight=minHeightAnterior;
+    const nomes=["padrão","compacto","supercompacto","ultracompacto"];
+    const umaPagina=alturaFinal>0 && alturaFinal<=limiteUmaPagina;
+    contrato.dataset.ajusteA4=umaPagina ? "uma-pagina" : "multiplas-paginas";
+    if(status){
+        status.textContent=umaPagina
+            ? `✓ Ajustado para uma página A4 · layout ${nomes[nivel]}`
+            : "✓ Formato A4 · continuará em páginas adicionais sem cortar as ferramentas";
+    }
+    return {nivel,umaPagina,altura:alturaFinal,limite:limiteUmaPagina};
 }
 
 function imprimirContrato(numero){
+    ajustarContratoA4();
     const tituloAnterior=document.title;
     let restaurado=false;
     const restaurar=()=>{
