@@ -616,6 +616,79 @@ tr:hover td{
     background:#fafafa;
 }
 
+.bloqueio-motivo-resumo{
+    max-width:280px;
+    color:#374151;
+    line-height:1.4;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.bloqueio-ler-btn{
+    margin-top:7px;
+}
+
+.bloqueio-detalhe-linha[hidden]{
+    display:none;
+}
+
+.bloqueio-detalhe-linha td,
+.bloqueio-detalhe-linha:hover td{
+    padding:0 15px 16px;
+    background:#f8fafc;
+}
+
+.bloqueio-detalhe-card{
+    border:1px solid #dbe3ef;
+    border-left:4px solid #991b1b;
+    border-radius:10px;
+    padding:15px;
+    background:white;
+    box-shadow:0 3px 12px rgba(15,23,42,.06);
+}
+
+.bloqueio-detalhe-cabecalho{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+}
+
+.bloqueio-detalhe-cabecalho strong{
+    display:block;
+    color:#111827;
+    font-size:15px;
+}
+
+.bloqueio-detalhe-cabecalho small{
+    display:block;
+    margin-top:3px;
+    color:#6b7280;
+}
+
+.bloqueio-motivo-completo{
+    min-height:54px;
+    padding:13px 14px;
+    border:1px solid #e5e7eb;
+    border-radius:9px;
+    background:#f9fafb;
+    color:#1f2937;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.65;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+}
+
+.bloqueio-detalhe-rodape{
+    margin-top:9px;
+    color:#6b7280;
+    font-size:12px;
+}
+
 .empty{
     padding:40px;
     text-align:center;
@@ -4776,8 +4849,13 @@ function renderBloqueados(){
         const emManutencao=quantidadeManutencaoFerramenta(f);
         const bloqueadas=quantidadeBloqueadaFerramenta(f);
         const disponiveis=estoqueDisponivelFerramenta(f.id);
+        const motivo=String(f.motivoBloqueio || "Motivo não informado");
+        const motivoResumo=motivo.length>90 ? `${motivo.slice(0,87)}...` : motivo;
+        const dataAtualizacao=f.bloqueioAtualizadoEm ?
+            `Atualizado em ${formatarData(String(f.bloqueioAtualizadoEm).slice(0,10))}` :
+            "Data da atualização não informada";
         return `
-            <tr>
+            <tr class="bloqueio-resumo-linha">
                 <td><strong>${escapeHtml(f.nome)}</strong><br><small>${escapeHtml(f.voltagem || "Sem voltagem")}</small></td>
                 <td>${escapeHtml(f.codigo)}</td>
                 <td>${total}</td>
@@ -4785,14 +4863,49 @@ function renderBloqueados(){
                 <td>${emManutencao}</td>
                 <td><span class="badge badge-red">${bloqueadas}</span></td>
                 <td><span class="badge ${disponiveis>0 ? "badge-green" : "badge-gray"}">${disponiveis}</span></td>
-                <td><strong>${escapeHtml(f.motivoBloqueio || "Motivo não informado")}</strong>${f.bloqueioAtualizadoEm ? `<br><small>Atualizado em ${formatarData(String(f.bloqueioAtualizadoEm).slice(0,10))}</small>` : ""}</td>
+                <td>
+                    <div class="bloqueio-motivo-resumo" title="${escapeHtml(motivo)}">${escapeHtml(motivoResumo)}</div>
+                    <button type="button" class="btn btn-secondary btn-sm bloqueio-ler-btn" aria-expanded="false" onclick="alternarDetalhesBloqueio(this)">Ler motivo</button>
+                </td>
                 <td><div class="actions">
                     ${disponiveis>0 ? `<button class="btn btn-blocked btn-sm" onclick="abrirBloquearFerramenta('${f.id}')">Adicionar</button>` : ""}
                     <button class="btn btn-success btn-sm" onclick="abrirLiberarBloqueio('${f.id}')">Desbloquear</button>
                 </div></td>
             </tr>
+            <tr class="bloqueio-detalhe-linha" hidden>
+                <td colspan="9">
+                    <div class="bloqueio-detalhe-card">
+                        <div class="bloqueio-detalhe-cabecalho">
+                            <div>
+                                <strong>Motivo completo do bloqueio</strong>
+                                <small>${escapeHtml(f.nome)} · Código ${escapeHtml(f.codigo)}</small>
+                            </div>
+                            <span class="badge badge-red">${bloqueadas} bloqueada(s)</span>
+                        </div>
+                        <div class="bloqueio-motivo-completo" tabindex="-1">${escapeHtml(motivo)}</div>
+                        <div class="bloqueio-detalhe-rodape">${escapeHtml(dataAtualizacao)}</div>
+                    </div>
+                </td>
+            </tr>
         `;
     }).join("");
+}
+
+
+function alternarDetalhesBloqueio(botao){
+    const linhaResumo=botao.closest("tr");
+    const linhaDetalhes=linhaResumo?.nextElementSibling;
+    if(!linhaDetalhes || !linhaDetalhes.classList.contains("bloqueio-detalhe-linha")) return;
+
+    const abrir=linhaDetalhes.hidden;
+    linhaDetalhes.hidden=!abrir;
+    botao.setAttribute("aria-expanded",String(abrir));
+    botao.textContent=abrir ? "Fechar motivo" : "Ler motivo";
+
+    if(abrir){
+        linhaDetalhes.querySelector(".bloqueio-motivo-completo")?.focus({preventScroll:true});
+        linhaDetalhes.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
 }
 
 
