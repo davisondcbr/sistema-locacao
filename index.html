@@ -215,6 +215,7 @@ body.acesso-bloqueado .tela-acesso{
     display:inline-block;
     width:25px;
 }
+.menu-contagem{float:right;min-width:24px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.14);color:inherit;font-size:11px;font-style:normal;text-align:center;}
 
 .main{
     margin-left:250px;
@@ -536,6 +537,11 @@ body.acesso-bloqueado .tela-acesso{
 
 .btn-warning{
     background:var(--warning);
+    color:white;
+}
+
+.btn-blocked{
+    background:#374151;
     color:white;
 }
 
@@ -1174,6 +1180,10 @@ textarea{
             <span>🛠️</span> Manutenção
         </button>
 
+        <button onclick="mostrarSecao('bloqueados',this)">
+            <span>⛔</span> Bloqueados <em id="menuBloqueadosTotal" class="menu-contagem">0</em>
+        </button>
+
         <button onclick="mostrarSecao('financeiro',this)">
             <span>💰</span> Financeiro
         </button>
@@ -1577,6 +1587,7 @@ textarea{
                         <th>Estoque total</th>
                         <th>Locadas</th>
                         <th>Em manutenção</th>
+                        <th>Bloqueadas</th>
                         <th>Disponíveis</th>
                         <th>Observações</th>
                         <th>Ações</th>
@@ -1585,6 +1596,58 @@ textarea{
                 </thead>
 
                 <tbody id="listaManutencao"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     BLOQUEADOS
+========================= -->
+
+<section id="bloqueados" class="secao">
+
+    <div class="page-title">
+
+        <div>
+            <h1>Bloqueados</h1>
+            <p>Unidades impedidas de entrar em locação ou manutenção</p>
+        </div>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-header">
+            <h3>Unidades bloqueadas: <span id="bloqueadosTotalPagina">0</span></h3>
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Ferramenta</th>
+                        <th>Código</th>
+                        <th>Estoque total</th>
+                        <th>Locadas</th>
+                        <th>Manutenção</th>
+                        <th>Bloqueadas</th>
+                        <th>Disponíveis</th>
+                        <th>Motivo</th>
+                        <th>Ações</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="listaBloqueados"></tbody>
 
             </table>
 
@@ -1879,7 +1942,7 @@ let temporizadorTentativa = null;
 let atrasoTentativa = 15000;
 let conflitoPendente = localStorage.getItem("loc_sync_conflict")==="1";
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
-const VERSAO_BANCO = 5;
+const VERSAO_BANCO = 6;
 const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
 const AUSENTE = Symbol("campo ausente");
 
@@ -2197,6 +2260,12 @@ function quantidadeManutencaoFerramenta(ferramenta){
         Math.min(quantidade,estoqueTotalFerramenta(ferramenta)) : 0;
 }
 
+function quantidadeBloqueadaFerramenta(ferramenta){
+    const quantidade=Number(ferramenta?.quantidadeBloqueada);
+    return Number.isInteger(quantidade) && quantidade>=0 ?
+        Math.min(quantidade,estoqueTotalFerramenta(ferramenta)) : 0;
+}
+
 function quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId=""){
     return locacoes.filter(locacao=>locacao.id!==ignorarLocacaoId && locacao.status==="Ativa")
         .reduce((total,locacao)=>total+itensDaLocacao(locacao)
@@ -2207,15 +2276,12 @@ function quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId=""){
 function estoqueDisponivelFerramenta(ferramentaId,ignorarLocacaoId=""){
     const ferramenta=ferramentas.find(item=>item.id===ferramentaId);
     return ferramenta ? Math.max(0,estoqueTotalFerramenta(ferramenta)-
-        quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId)-quantidadeManutencaoFerramenta(ferramenta)) : 0;
+        quantidadeAlugadaFerramenta(ferramentaId,ignorarLocacaoId)-quantidadeManutencaoFerramenta(ferramenta)-
+        quantidadeBloqueadaFerramenta(ferramenta)) : 0;
 }
 
 function totalUnidadesLocacao(locacao){
     return itensDaLocacao(locacao).reduce((total,item)=>total+quantidadeItemLocacao(item),0);
-}
-
-function ferramentaComUsoBloqueado(ferramenta){
-    return ferramenta?.status==="Reservada";
 }
 
 function corrigirDisponibilidade(){
@@ -2235,6 +2301,18 @@ function corrigirDisponibilidade(){
             ferramenta.quantidadeManutencao=manutencao;
             corrigiu=true;
         }
+        const quantidadeBloqueadaInformada=Number(ferramenta.quantidadeBloqueada);
+        let bloqueadas=Number.isInteger(quantidadeBloqueadaInformada) && quantidadeBloqueadaInformada>=0 ? quantidadeBloqueadaInformada :
+            ferramenta.status==="Reservada" ? Math.max(0,estoque-alugadas-manutencao) : 0;
+        bloqueadas=Math.min(bloqueadas,Math.max(0,estoque-alugadas-manutencao));
+        if(ferramenta.quantidadeBloqueada!==bloqueadas){
+            ferramenta.quantidadeBloqueada=bloqueadas;
+            corrigiu=true;
+        }
+        if(ferramenta.status==="Reservada" && bloqueadas>0 && !ferramenta.motivoBloqueio){
+            ferramenta.motivoBloqueio="Migrado da situação Reservada.";
+            corrigiu=true;
+        }
     }
     for(const locacao of locacoes){
         if(Array.isArray(locacao.itens)){
@@ -2248,9 +2326,9 @@ function corrigirDisponibilidade(){
         }
     }
     for(const ferramenta of ferramentas){
-        if(ferramentaComUsoBloqueado(ferramenta)) continue;
         const disponiveis=estoqueDisponivelFerramenta(ferramenta.id);
         const status=disponiveis>0 ? "Disponível" :
+            quantidadeBloqueadaFerramenta(ferramenta)>0 ? "Bloqueada" :
             quantidadeManutencaoFerramenta(ferramenta)>0 ? "Manutenção" : "Alugada";
         if(ferramenta.status!==status){ferramenta.status=status;corrigiu=true;}
     }
@@ -2623,6 +2701,7 @@ const titulos = {
     locacoes:"Locações",
     contratos:"Contratos",
     manutencao:"Manutenção",
+    bloqueados:"Bloqueados",
     financeiro:"Financeiro",
     configuracoes:"Configurações"
 };
@@ -2952,11 +3031,8 @@ function abrirNovaFerramenta(){
             </div>
             <div class="form-group">
                 <label>Situação geral</label>
-                <select id="ferramentaStatus">
-                    <option value="Disponível">Disponível</option>
-                    <option value="Reservada">Reservada</option>
-                </select>
-                <small>Após salvar, use o botão “Manutenção” para informar a quantidade.</small>
+                <input value="Disponível" readonly>
+                <small>Após salvar, use os botões “Manutenção” ou “Bloquear” para controlar as unidades.</small>
             </div>
             <div class="form-group full">
                 <label>Observações</label>
@@ -2977,6 +3053,7 @@ function editarFerramenta(id){
     ferramentaEditando = id;
     const alugadas=quantidadeAlugadaFerramenta(id);
     const emManutencao=quantidadeManutencaoFerramenta(f);
+    const bloqueadas=quantidadeBloqueadaFerramenta(f);
 
     abrirModal("Editar Ferramenta",`
         <div class="form-grid">
@@ -3004,8 +3081,8 @@ function editarFerramenta(id){
             </div>
             <div class="form-group">
                 <label>Quantidade total em estoque *</label>
-                <input id="ferramentaQuantidade" type="number" min="${Math.max(1,alugadas+emManutencao)}" step="1" value="${estoqueTotalFerramenta(f)}">
-                <small>${alugadas} locada(s) e ${emManutencao} em manutenção. O estoque não pode ser menor que a soma dessas quantidades.</small>
+                <input id="ferramentaQuantidade" type="number" min="${Math.max(1,alugadas+emManutencao+bloqueadas)}" step="1" value="${estoqueTotalFerramenta(f)}">
+                <small>${alugadas} locada(s), ${emManutencao} em manutenção e ${bloqueadas} bloqueada(s). O estoque não pode ser menor que a soma.</small>
             </div>
             <div class="form-group">
                 <label>Valor diária por unidade</label>
@@ -3021,12 +3098,8 @@ function editarFerramenta(id){
             </div>
             <div class="form-group">
                 <label>Situação geral</label>
-                <select id="ferramentaStatus">
-                    ${["Disponível","Reservada"].map(v=>`
-                        <option ${f.status===v?"selected":""}>${v}</option>
-                    `).join("")}
-                </select>
-                <small>A manutenção por quantidade é controlada pelo botão próprio.</small>
+                <input value="${escapeHtml(f.status || "Disponível")}" readonly>
+                <small>Manutenção e bloqueio são controlados por quantidade nos botões próprios.</small>
             </div>
             <div class="form-group full">
                 <label>Observações</label>
@@ -3053,8 +3126,9 @@ function salvarFerramenta(){
     const alugadas=ferramentaEditando ? quantidadeAlugadaFerramenta(ferramentaEditando) : 0;
     const ferramentaAtual=ferramentaEditando ? ferramentas.find(f=>f.id===ferramentaEditando) : null;
     const emManutencao=quantidadeManutencaoFerramenta(ferramentaAtual);
-    if(quantidadeEstoque<alugadas+emManutencao){
-        mostrarToast(`Existem ${alugadas} unidade(s) locada(s) e ${emManutencao} em manutenção. O estoque mínimo é ${alugadas+emManutencao}.`);
+    const bloqueadas=quantidadeBloqueadaFerramenta(ferramentaAtual);
+    if(quantidadeEstoque<alugadas+emManutencao+bloqueadas){
+        mostrarToast(`Existem ${alugadas} locada(s), ${emManutencao} em manutenção e ${bloqueadas} bloqueada(s). O estoque mínimo é ${alugadas+emManutencao+bloqueadas}.`);
         return;
     }
 
@@ -3067,7 +3141,6 @@ function salvarFerramenta(){
         semanal:Number(document.getElementById("ferramentaSemanal").value || 0),
         mensal:Number(document.getElementById("ferramentaMensal").value || 0),
         quantidadeEstoque,
-        status:document.getElementById("ferramentaStatus").value,
         observacoes:document.getElementById("ferramentaObservacoes").value.trim()
     };
 
@@ -3077,7 +3150,8 @@ function salvarFerramenta(){
             ferramentas[index] = { ...ferramentas[index], ...dados };
         }
     }else{
-        ferramentas.push({ id:gerarId(), ...dados, quantidadeManutencao:0, observacaoManutencao:"", criadoEm:new Date().toISOString() });
+        ferramentas.push({ id:gerarId(), ...dados, status:"Disponível", quantidadeManutencao:0,
+            observacaoManutencao:"", quantidadeBloqueada:0, motivoBloqueio:"", criadoEm:new Date().toISOString() });
     }
 
     corrigirDisponibilidade();
@@ -3111,6 +3185,7 @@ function badgeStatusFerramenta(status){
     if(status==="Manutenção") classe="badge-red";
     if(status==="Reservada") classe="badge-yellow";
     if(status==="Alugada") classe="badge-blue";
+    if(status==="Bloqueada") classe="badge-red";
     return `<span class="badge ${classe}">${escapeHtml(status)}</span>`;
 }
 
@@ -3140,21 +3215,23 @@ function renderFerramentas(){
         const total=estoqueTotalFerramenta(f);
         const alugadas=quantidadeAlugadaFerramenta(f.id);
         const emManutencao=quantidadeManutencaoFerramenta(f);
+        const bloqueadas=quantidadeBloqueadaFerramenta(f);
         const livres=estoqueDisponivelFerramenta(f.id);
         return `
             <tr>
                 <td><strong>${escapeHtml(f.nome)}</strong></td>
                 <td>${escapeHtml(f.codigo)}</td>
                 <td>${escapeHtml(f.voltagem || "-")}</td>
-                <td><strong>${livres}/${total} disponíveis</strong><br><small>${alugadas} locada(s) · ${emManutencao} em manutenção</small></td>
+                <td><strong>${livres}/${total} disponíveis</strong><br><small>${alugadas} locada(s) · ${emManutencao} manutenção · ${bloqueadas} bloqueada(s)</small></td>
                 <td>${formatarMoeda(f.diaria)}</td>
                 <td>${formatarMoeda(f.semanal)}</td>
                 <td>${formatarMoeda(f.mensal)}</td>
-                <td>${badgeStatusFerramenta(f.status)}${emManutencao>0 && f.status!=="Manutenção" ? `<br><span class="badge badge-red" style="margin-top:4px;">${emManutencao} manutenção</span>` : ""}</td>
+                <td>${badgeStatusFerramenta(f.status)}${emManutencao>0 && f.status!=="Manutenção" ? `<br><span class="badge badge-yellow" style="margin-top:4px;">${emManutencao} manutenção</span>` : ""}${bloqueadas>0 && f.status!=="Bloqueada" ? `<br><span class="badge badge-red" style="margin-top:4px;">${bloqueadas} bloqueada(s)</span>` : ""}</td>
                 <td>
                     <div class="actions">
                         <button class="btn btn-secondary btn-sm" onclick="editarFerramenta('${f.id}')">Editar</button>
                         <button class="btn btn-warning btn-sm" onclick="abrirEnviarManutencao('${f.id}')" ${livres<=0 ? "disabled" : ""}>Manutenção</button>
+                        <button class="btn btn-blocked btn-sm" onclick="abrirBloquearFerramenta('${f.id}')" ${livres<=0 ? "disabled" : ""}>Bloquear</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirFerramenta('${f.id}')">Excluir</button>
                     </div>
                 </td>
@@ -3174,7 +3251,7 @@ function abrirEnviarManutencao(id){
     }
     abrirModal("Enviar para manutenção",`
         <div class="info-box"><strong>${escapeHtml(ferramenta.nome)}</strong><br>
-        Estoque total: ${estoqueTotalFerramenta(ferramenta)} · Locadas: ${quantidadeAlugadaFerramenta(id)} · Em manutenção: ${emManutencao} · Disponíveis: ${disponiveis}</div>
+        Estoque total: ${estoqueTotalFerramenta(ferramenta)} · Locadas: ${quantidadeAlugadaFerramenta(id)} · Bloqueadas: ${quantidadeBloqueadaFerramenta(ferramenta)} · Em manutenção: ${emManutencao} · Disponíveis: ${disponiveis}</div>
         <div class="form-grid">
             <div class="form-group">
                 <label>Quantidade que vai para manutenção *</label>
@@ -3250,6 +3327,97 @@ function confirmarLiberacaoManutencao(id,todas=false){
     fecharModal();
     atualizarTudo();
     mostrarToast(`${quantidade} unidade(s) liberada(s) da manutenção.`);
+}
+
+function abrirBloquearFerramenta(id){
+    const ferramenta=ferramentas.find(f=>f.id===id);
+    if(!ferramenta) return;
+    const disponiveis=estoqueDisponivelFerramenta(id);
+    const bloqueadas=quantidadeBloqueadaFerramenta(ferramenta);
+    if(disponiveis<=0){
+        mostrarToast("Não há unidades disponíveis para bloquear.");
+        return;
+    }
+    abrirModal("Bloquear unidades",`
+        <div class="info-box"><strong>${escapeHtml(ferramenta.nome)}</strong><br>
+        Estoque total: ${estoqueTotalFerramenta(ferramenta)} · Locadas: ${quantidadeAlugadaFerramenta(id)} · Em manutenção: ${quantidadeManutencaoFerramenta(ferramenta)} · Bloqueadas: ${bloqueadas} · Disponíveis: ${disponiveis}</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Quantidade que será bloqueada *</label>
+                <input id="bloqueioQuantidadeEntrada" type="number" min="1" max="${disponiveis}" step="1" value="1">
+                <small>Máximo disponível agora: ${disponiveis} unidade(s).</small>
+            </div>
+            <div class="form-group full">
+                <label>Motivo do bloqueio *</label>
+                <textarea id="bloqueioMotivo" placeholder="Ex.: aguardando peça, equipamento danificado ou reservado internamente...">${escapeHtml(ferramenta.motivoBloqueio || "")}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-blocked" onclick="confirmarBloqueioFerramenta('${id}')">⛔ Confirmar bloqueio</button>
+        </div>
+    `);
+}
+
+function confirmarBloqueioFerramenta(id){
+    const ferramenta=ferramentas.find(f=>f.id===id);
+    if(!ferramenta) return;
+    const quantidade=Number(document.getElementById("bloqueioQuantidadeEntrada")?.value);
+    const motivo=document.getElementById("bloqueioMotivo")?.value.trim() || "";
+    const disponiveis=estoqueDisponivelFerramenta(id);
+    if(!Number.isInteger(quantidade) || quantidade<1 || quantidade>disponiveis){
+        mostrarToast(`Informe uma quantidade inteira entre 1 e ${disponiveis}.`);
+        return;
+    }
+    if(!motivo){mostrarToast("Informe o motivo do bloqueio.");return;}
+    ferramenta.quantidadeBloqueada=quantidadeBloqueadaFerramenta(ferramenta)+quantidade;
+    ferramenta.motivoBloqueio=motivo;
+    ferramenta.bloqueioAtualizadoEm=new Date().toISOString();
+    corrigirDisponibilidade();
+    salvarDados();
+    fecharModal();
+    atualizarTudo();
+    mostrarToast(`${quantidade} unidade(s) bloqueada(s).`);
+}
+
+function abrirLiberarBloqueio(id){
+    const ferramenta=ferramentas.find(f=>f.id===id);
+    if(!ferramenta) return;
+    const bloqueadas=quantidadeBloqueadaFerramenta(ferramenta);
+    if(bloqueadas<=0){mostrarToast("Esta ferramenta não possui unidades bloqueadas.");return;}
+    abrirModal("Liberar unidades bloqueadas",`
+        <div class="info-box"><strong>${escapeHtml(ferramenta.nome)}</strong><br>
+        Bloqueadas: ${bloqueadas} unidade(s).<br>Motivo: ${escapeHtml(ferramenta.motivoBloqueio || "Não informado")}</div>
+        <div class="form-group">
+            <label>Quantidade que será liberada *</label>
+            <input id="bloqueioQuantidadeSaida" type="number" min="1" max="${bloqueadas}" step="1" value="1">
+            <small>As unidades liberadas voltam imediatamente ao estoque disponível.</small>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            ${bloqueadas>1 ? `<button class="btn btn-secondary" onclick="confirmarLiberacaoBloqueio('${id}',true)">Liberar todas</button>` : ""}
+            <button class="btn btn-success" onclick="confirmarLiberacaoBloqueio('${id}',false)">✓ Liberar quantidade</button>
+        </div>
+    `);
+}
+
+function confirmarLiberacaoBloqueio(id,todas=false){
+    const ferramenta=ferramentas.find(f=>f.id===id);
+    if(!ferramenta) return;
+    const bloqueadas=quantidadeBloqueadaFerramenta(ferramenta);
+    const quantidade=todas ? bloqueadas : Number(document.getElementById("bloqueioQuantidadeSaida")?.value);
+    if(!Number.isInteger(quantidade) || quantidade<1 || quantidade>bloqueadas){
+        mostrarToast(`Informe uma quantidade inteira entre 1 e ${bloqueadas}.`);
+        return;
+    }
+    ferramenta.quantidadeBloqueada=bloqueadas-quantidade;
+    if(ferramenta.quantidadeBloqueada===0) ferramenta.motivoBloqueio="";
+    ferramenta.bloqueioAtualizadoEm=new Date().toISOString();
+    corrigirDisponibilidade();
+    salvarDados();
+    fecharModal();
+    atualizarTudo();
+    mostrarToast(`${quantidade} unidade(s) desbloqueada(s).`);
 }
 
 
@@ -3431,7 +3599,7 @@ function limiteEstoqueParaLocacao(ferramentaId,atual=null){
 function opcoesFerramentasLocacao(selecionado="",atual=null){
     const anteriores=new Set(idsFerramentasDaLocacao(atual));
     return ferramentas.filter(f=>atual?.status==="Finalizada" || anteriores.has(f.id) || f.id===selecionado ||
-        (!ferramentaComUsoBloqueado(f) && limiteEstoqueParaLocacao(f.id,atual)>0))
+        limiteEstoqueParaLocacao(f.id,atual)>0)
         .map(f=>{
             const total=estoqueTotalFerramenta(f);
             const livres=limiteEstoqueParaLocacao(f.id,atual);
@@ -3966,12 +4134,8 @@ function coletarItensFormulario(retirada){
 
 function erroEstoqueLocacao(itens,anterior=null){
     if(anterior?.status==="Finalizada") return "";
-    const idsAnteriores=new Set(anterior?.status==="Ativa" ? idsFerramentasDaLocacao(anterior) : []);
     for(const item of itens){
         const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
-        if(ferramentaComUsoBloqueado(ferramenta) && !idsAnteriores.has(item.ferramentaId)){
-            return `${ferramenta?.nome || "A ferramenta"} está em ${String(ferramenta?.status || "indisponível").toLowerCase()}.`;
-        }
         const disponivel=estoqueDisponivelFerramenta(item.ferramentaId,anterior?.status==="Ativa" ? anterior.id : "");
         if(quantidadeItemLocacao(item)>disponivel){
             return `${ferramenta?.nome || "A ferramenta"}: somente ${disponivel} unidade(s) disponível(is).`;
@@ -4553,7 +4717,7 @@ function renderManutencao(){
     const lista=ferramentas.filter(f=>quantidadeManutencaoFerramenta(f)>0);
 
     if(!lista.length){
-        tbody.innerHTML=`<tr><td colspan="8" class="empty">Nenhuma unidade em manutenção.</td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="9" class="empty">Nenhuma unidade em manutenção.</td></tr>`;
         return;
     }
 
@@ -4569,6 +4733,7 @@ function renderManutencao(){
                 <td>${total}</td>
                 <td>${alugadas}</td>
                 <td><span class="badge badge-red">${emManutencao}</span></td>
+                <td>${quantidadeBloqueadaFerramenta(f)}</td>
                 <td><span class="badge ${disponiveis>0 ? "badge-green" : "badge-gray"}">${disponiveis}</span></td>
                 <td>${escapeHtml(f.observacaoManutencao || f.observacoes || "-")}</td>
                 <td><div class="actions">
@@ -4583,6 +4748,51 @@ function renderManutencao(){
 
 function liberarManutencao(id){
     abrirLiberarManutencao(id);
+}
+
+
+/* =====================================================
+   BLOQUEADOS
+===================================================== */
+
+function renderBloqueados(){
+    const tbody=document.getElementById("listaBloqueados");
+    const totalBloqueadas=ferramentas.reduce((total,f)=>total+quantidadeBloqueadaFerramenta(f),0);
+    const contadorMenu=document.getElementById("menuBloqueadosTotal");
+    const contadorPagina=document.getElementById("bloqueadosTotalPagina");
+    if(contadorMenu) contadorMenu.textContent=totalBloqueadas;
+    if(contadorPagina) contadorPagina.textContent=totalBloqueadas;
+    if(!tbody) return;
+    const lista=ferramentas.filter(f=>quantidadeBloqueadaFerramenta(f)>0);
+
+    if(!lista.length){
+        tbody.innerHTML=`<tr><td colspan="9" class="empty">Nenhuma unidade bloqueada.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML=lista.map(f=>{
+        const total=estoqueTotalFerramenta(f);
+        const alugadas=quantidadeAlugadaFerramenta(f.id);
+        const emManutencao=quantidadeManutencaoFerramenta(f);
+        const bloqueadas=quantidadeBloqueadaFerramenta(f);
+        const disponiveis=estoqueDisponivelFerramenta(f.id);
+        return `
+            <tr>
+                <td><strong>${escapeHtml(f.nome)}</strong><br><small>${escapeHtml(f.voltagem || "Sem voltagem")}</small></td>
+                <td>${escapeHtml(f.codigo)}</td>
+                <td>${total}</td>
+                <td>${alugadas}</td>
+                <td>${emManutencao}</td>
+                <td><span class="badge badge-red">${bloqueadas}</span></td>
+                <td><span class="badge ${disponiveis>0 ? "badge-green" : "badge-gray"}">${disponiveis}</span></td>
+                <td><strong>${escapeHtml(f.motivoBloqueio || "Motivo não informado")}</strong>${f.bloqueioAtualizadoEm ? `<br><small>Atualizado em ${formatarData(String(f.bloqueioAtualizadoEm).slice(0,10))}</small>` : ""}</td>
+                <td><div class="actions">
+                    ${disponiveis>0 ? `<button class="btn btn-blocked btn-sm" onclick="abrirBloquearFerramenta('${f.id}')">Adicionar</button>` : ""}
+                    <button class="btn btn-success btn-sm" onclick="abrirLiberarBloqueio('${f.id}')">Desbloquear</button>
+                </div></td>
+            </tr>
+        `;
+    }).join("");
 }
 
 
@@ -4915,6 +5125,7 @@ function atualizarTudo(){
     renderLocacoes();
     renderContratos();
     renderManutencao();
+    renderBloqueados();
     atualizarDashboard();
     atualizarFinanceiro();
     carregarConfiguracoes();
