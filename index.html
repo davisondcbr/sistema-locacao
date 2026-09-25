@@ -616,6 +616,22 @@ tr:hover td{
     background:#fafafa;
 }
 
+.locacao-prazo-vencido{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    margin-top:6px;
+    padding:5px 8px;
+    border:1px solid #fecaca;
+    border-radius:999px;
+    background:#fee2e2;
+    color:#991b1b;
+    font-size:11px;
+    font-weight:800;
+    line-height:1;
+    white-space:nowrap;
+}
+
 .bloqueio-motivo-resumo{
     max-width:280px;
     color:#374151;
@@ -4486,6 +4502,18 @@ function ferramentasLocacaoHtml(locacao,limite=4){
 }
 
 
+function sinalPrazoVencidoLocacao(locacao,hoje=dataHoje()){
+    if(locacao?.status!=="Ativa") return "";
+    const vencimentos=itensDaLocacao(locacao)
+        .map(item=>item.devolucaoOriginal || item.devolucao)
+        .filter(data=>dataCalendarioUTC(data) && data<hoje)
+        .sort();
+    if(!vencimentos.length) return "";
+    const desde=formatarData(vencimentos[0]);
+    return `<br><span class="locacao-prazo-vencido" title="Prazo ultrapassado desde ${escapeHtml(desde)}" aria-label="Prazo ultrapassado desde ${escapeHtml(desde)}">⚠ Prazo vencido</span>`;
+}
+
+
 function renderLocacoes(){
     const tbody = document.getElementById("listaLocacoes");
     const busca = (document.getElementById("buscaLocacoes")?.value || "").toLowerCase();
@@ -4512,6 +4540,7 @@ function renderLocacoes(){
         const contrato = contratos.find(c=>c.locacaoId===l.id);
         const quantidadeItens=itensDaLocacao(l).length;
         const quantidadeUnidades=totalUnidadesLocacao(l);
+        const sinalPrazoVencido=sinalPrazoVencidoLocacao(l);
 
         return `
             <tr>
@@ -4521,7 +4550,7 @@ function renderLocacoes(){
                     <small style="color:#1d4ed8;">${quantidadeUnidades} unidade(s) em ${quantidadeItens} tipo(s)</small>
                 </td>
                 <td>${formatarData(l.retirada)}</td>
-                <td>${formatarData(l.devolucao)}${l.renovacoes ? `<br><small style="color:#92400e;">${l.renovacoes} renovação(ões) automática(s)</small>` : ""}</td>
+                <td>${formatarData(l.devolucao)}${sinalPrazoVencido}${l.renovacoes ? `<br><small style="color:#92400e;">${l.renovacoes} renovação(ões) automática(s)</small>` : ""}</td>
                 <td>${textoCobranca(l.tipoCobranca)}${l.periodosContratados ? `<br><small>${l.periodosContratados} período(s) inicial(is)</small>` : ""}</td>
                 <td>${formatarMoeda(l.valor)}</td>
                 <td>${badgeStatusPagamento(l)}</td>
