@@ -1974,7 +1974,7 @@ textarea{
         <div class="table-header"><h3>Recebimentos no período <small id="finQuantidadeRecebimentos" style="color:#6b7280"></small></h3></div>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>Data do pagamento</th><th>Cliente</th><th>Ferramentas</th><th>Data da retirada</th><th>Forma</th><th>Valor recebido</th><th>Contrato</th></tr></thead>
+                <thead><tr><th>Data do pagamento</th><th>Cliente</th><th>Ferramentas</th><th>Data da retirada</th><th>Forma</th><th>Valor recebido</th><th>Contrato</th><th>Ações</th></tr></thead>
                 <tbody id="finRecebimentos"></tbody>
             </table>
         </div>
@@ -4628,7 +4628,7 @@ function confirmarPagamentoEFinalizar(id){
 }
 
 
-function abrirRecebimentoParcial(id){
+function abrirRecebimentoParcial(id,pagamentoId=""){
     const locacao=locacoes.find(l=>l.id===id);
     if(!locacao){mostrarToast("Locação não encontrada.");return;}
     if(locacao.status==="Ativa" && renovarLocacoesVencidas([locacao])){
@@ -4638,32 +4638,34 @@ function abrirRecebimentoParcial(id){
     const total=Number(locacao.valor || 0);
     const recebido=valorRecebidoLocacao(locacao);
     const saldo=saldoDaLocacao(locacao);
-    if(saldo<=0){mostrarToast("Esta locação já está totalmente paga.");return;}
     const cliente=clientes.find(c=>c.id===locacao.clienteId);
     const contrato=contratos.find(c=>c.locacaoId===locacao.id);
     const historico=pagamentosDaLocacao(locacao).slice().sort((a,b)=>(b.data || "").localeCompare(a.data || ""));
+    const pagamentoEditando=pagamentoId ? historico.find(p=>p.id===pagamentoId) : null;
+    if(pagamentoId && !pagamentoEditando){mostrarToast("Recebimento não encontrado.");return;}
+    if(saldo<=0 && !historico.length){mostrarToast("Não há recebimentos registrados nesta locação.");return;}
+    const limite=arredondarValor(saldo+Number(pagamentoEditando?.valor || 0));
     const linhasHistorico=historico.length ? historico.map(p=>`<tr>
         <td>${escapeHtml(formatarData(p.data))}</td>
         <td>${escapeHtml(p.forma || "Não informada")}</td>
         <td>${formatarMoeda(p.valor)}</td>
         <td>${escapeHtml(p.observacao || "-")}</td>
-    </tr>`).join("") : '<tr><td colspan="4" class="empty" style="padding:20px;">Nenhum recebimento registrado.</td></tr>';
+        <td><div class="actions">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="abrirRecebimentoParcial('${locacao.id}','${p.id}')">Editar</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="excluirRecebimento('${locacao.id}','${p.id}')">Excluir</button>
+        </div></td>
+    </tr>`).join("") : '<tr><td colspan="5" class="empty" style="padding:20px;">Nenhum recebimento registrado.</td></tr>';
 
-    abrirModal("Registrar pagamento",`
-        <p class="info-box"><strong>${escapeHtml(cliente?.nome || "Cliente não localizado")}</strong> · Contrato #${escapeHtml(contrato?.numero || "-")}<br>${escapeHtml(nomesFerramentasLocacao(locacao,3))}</p>
-        <div class="pagamento-painel">
-            <div><small>Total da locação</small><strong>${formatarMoeda(total)}</strong></div>
-            <div><small>Total já pago</small><strong>${formatarMoeda(recebido)}</strong></div>
-            <div class="pagamento-saldo"><small>Saldo restante</small><strong>${formatarMoeda(saldo)}</strong></div>
-        </div>
+    const formulario=pagamentoEditando || saldo>0 ? `
+        ${pagamentoEditando ? `<p class="info-box"><strong>Editando recebimento de ${formatarMoeda(pagamentoEditando.valor)}.</strong> O total pago, o saldo e os relatórios serão recalculados ao salvar.</p>` : ""}
         <div class="form-grid">
             <div class="form-group">
-                <label>Valor recebido agora (R$) *</label>
-                <input id="recebimentoParcialValor" type="number" min="0.01" max="${saldo.toFixed(2)}" step="0.01" value="${saldo.toFixed(2)}">
+                <label>${pagamentoEditando ? "Valor do recebimento" : "Valor recebido agora"} (R$) *</label>
+                <input id="recebimentoParcialValor" type="number" min="0.01" max="${limite.toFixed(2)}" step="0.01" value="${Number(pagamentoEditando?.valor ?? saldo).toFixed(2)}">
                 <div class="pagamento-atalhos">
-                    ${saldo>=50 ? '<button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(50)">R$ 50</button>' : ''}
-                    ${saldo>=100 ? '<button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(100)">R$ 100</button>' : ''}
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(${saldo.toFixed(2)})">Quitar saldo</button>
+                    ${limite>=50 ? '<button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(50)">R$ 50</button>' : ''}
+                    ${limite>=100 ? '<button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(100)">R$ 100</button>' : ''}
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="definirValorRecebimento(${limite.toFixed(2)})">${pagamentoEditando ? "Máximo permitido" : "Quitar saldo"}</button>
                 </div>
             </div>
             <div class="form-group">
@@ -4679,23 +4681,33 @@ function abrirRecebimentoParcial(id){
             </div>
             <div class="form-group">
                 <label>Data do recebimento *</label>
-                <input id="recebimentoParcialData" type="date" value="${dataHoje()}">
+                <input id="recebimentoParcialData" type="date" value="${escapeHtml(pagamentoEditando?.data || dataHoje())}">
             </div>
             <div class="form-group">
                 <label>Observação</label>
-                <input id="recebimentoParcialObservacao" maxlength="180" placeholder="Ex.: primeira parcela, acerto parcial...">
+                <input id="recebimentoParcialObservacao" maxlength="180" value="${escapeHtml(pagamentoEditando?.observacao || "")}" placeholder="Ex.: primeira parcela, acerto parcial...">
             </div>
+        </div>` : `<p class="info-box" style="border-color:#bbf7d0;background:#f0fdf4;color:#166534;"><strong>Esta locação está totalmente paga.</strong> Use Editar ou Excluir no histórico abaixo caso precise corrigir algum recebimento.</p>`;
+
+    abrirModal(pagamentoEditando ? "Editar recebimento" : saldo>0 ? "Registrar pagamento" : "Pagamentos da locação",`
+        <p class="info-box"><strong>${escapeHtml(cliente?.nome || "Cliente não localizado")}</strong> · Contrato #${escapeHtml(contrato?.numero || "-")}<br>${escapeHtml(nomesFerramentasLocacao(locacao,3))}</p>
+        <div class="pagamento-painel">
+            <div><small>Total da locação</small><strong>${formatarMoeda(total)}</strong></div>
+            <div><small>Total já pago</small><strong>${formatarMoeda(recebido)}</strong></div>
+            <div class="pagamento-saldo"><small>Saldo restante</small><strong>${formatarMoeda(saldo)}</strong></div>
         </div>
+        ${formulario}
         <div class="pagamento-historico">
             <h4>Histórico de recebimentos (${historico.length})</h4>
-            <div class="table-wrapper"><table><thead><tr><th>Data</th><th>Forma</th><th>Valor</th><th>Observação</th></tr></thead><tbody>${linhasHistorico}</tbody></table></div>
+            <div class="table-wrapper"><table><thead><tr><th>Data</th><th>Forma</th><th>Valor</th><th>Observação</th><th>Ações</th></tr></thead><tbody>${linhasHistorico}</tbody></table></div>
         </div>
         <div class="form-actions">
-            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-            <button class="btn btn-success" onclick="confirmarRecebimentoParcial('${locacao.id}')">💰 Registrar pagamento</button>
+            <button class="btn btn-secondary" onclick="fecharModal()">${pagamentoEditando ? "Cancelar edição" : "Fechar"}</button>
+            ${pagamentoEditando || saldo>0 ? `<button class="btn btn-success" onclick="confirmarRecebimentoParcial('${locacao.id}','${pagamentoEditando?.id || ""}')">${pagamentoEditando ? "✓ Salvar alteração" : "💰 Registrar pagamento"}</button>` : ""}
         </div>
     `,"modal-larga");
-    document.getElementById("recebimentoParcialForma").value=locacao.pagamento || "";
+    const seletorForma=document.getElementById("recebimentoParcialForma");
+    if(seletorForma) seletorForma.value=pagamentoEditando?.forma || locacao.pagamento || "";
 }
 
 
@@ -4709,21 +4721,26 @@ function definirValorRecebimento(valor){
 }
 
 
-function confirmarRecebimentoParcial(id){
+function confirmarRecebimentoParcial(id,pagamentoId=""){
     const locacao=locacoes.find(l=>l.id===id);
     if(!locacao){mostrarToast("Locação não encontrada.");return;}
+    const existentes=pagamentosDaLocacao(locacao);
+    const indiceEditado=pagamentoId ? existentes.findIndex(p=>p.id===pagamentoId) : -1;
+    if(pagamentoId && indiceEditado<0){mostrarToast("Recebimento não encontrado.");return;}
+    const pagamentoAnterior=indiceEditado>=0 ? existentes[indiceEditado] : null;
     const saldo=saldoDaLocacao(locacao);
+    const limite=arredondarValor(saldo+Number(pagamentoAnterior?.valor || 0));
     const valor=arredondarValor(Number(document.getElementById("recebimentoParcialValor")?.value));
     const forma=document.getElementById("recebimentoParcialForma")?.value;
     const data=document.getElementById("recebimentoParcialData")?.value;
     const observacao=document.getElementById("recebimentoParcialObservacao")?.value.trim() || "";
-    if(!Number.isFinite(valor) || valor<=0 || valor>saldo+0.009){
-        mostrarToast(`Informe um valor entre R$ 0,01 e ${formatarMoeda(saldo)}.`);return;
+    if(!Number.isFinite(valor) || valor<=0 || valor>limite+0.009){
+        mostrarToast(`Informe um valor entre R$ 0,01 e ${formatarMoeda(limite)}.`);return;
     }
     if(!forma){mostrarToast("Selecione a forma de pagamento.");return;}
     if(!dataCalendarioUTC(data)){mostrarToast("Informe uma data de pagamento válida.");return;}
 
-    const anteriores=pagamentosDaLocacao(locacao);
+    const anteriores=existentes;
     if(!anteriores.length && !Array.isArray(locacao.pagamentos) && valorRecebidoLocacao(locacao)>0){
         anteriores.push({
             id:`antigo-${locacao.id}`,forma:locacao.pagamento || "Não informada",
@@ -4732,9 +4749,17 @@ function confirmarRecebimentoParcial(id){
             observacao:"Recebimento anterior preservado na migração."
         });
     }
-    locacao.pagamentos=[...anteriores,{
-        id:gerarId(),forma,data,valor,momento:"parcial",observacao,criadoEm:new Date().toISOString()
-    }];
+    if(pagamentoAnterior){
+        locacao.pagamentos=anteriores.map((p,index)=>index===indiceEditado ? {
+            ...p,forma,data,valor,observacao,
+            criadoEm:p.criadoEm || new Date().toISOString(),
+            atualizadoEm:new Date().toISOString()
+        } : p);
+    }else{
+        locacao.pagamentos=[...anteriores,{
+            id:gerarId(),forma,data,valor,momento:"parcial",observacao,criadoEm:new Date().toISOString()
+        }];
+    }
     if(!["entrada","devolucao"].includes(locacao.momentoPagamento)) locacao.momentoPagamento="devolucao";
     atualizarResumoPagamentoLocacao(locacao);
     locacao.atualizadaEm=new Date().toISOString();
@@ -4742,8 +4767,26 @@ function confirmarRecebimentoParcial(id){
     fecharModal();
     atualizarTudo();
     const novoSaldo=saldoDaLocacao(locacao);
-    mostrarToast(novoSaldo<=0 ? "Pagamento registrado. Locação totalmente paga." :
-        `Pagamento de ${formatarMoeda(valor)} registrado. Saldo: ${formatarMoeda(novoSaldo)}.`);
+    mostrarToast(novoSaldo<=0 ? `Recebimento ${pagamentoAnterior ? "atualizado" : "registrado"}. Locação totalmente paga.` :
+        `Recebimento ${pagamentoAnterior ? "atualizado" : "registrado"}: ${formatarMoeda(valor)}. Saldo: ${formatarMoeda(novoSaldo)}.`);
+}
+
+function excluirRecebimento(locacaoId,pagamentoId){
+    const locacao=locacoes.find(l=>l.id===locacaoId);
+    if(!locacao){mostrarToast("Locação não encontrada.");return;}
+    const pagamentos=pagamentosDaLocacao(locacao);
+    const pagamento=pagamentos.find(p=>p.id===pagamentoId);
+    if(!pagamento){mostrarToast("Recebimento não encontrado.");return;}
+    const cliente=clientes.find(c=>c.id===locacao.clienteId);
+    const aviso=`Excluir o recebimento de ${formatarMoeda(pagamento.valor)}, registrado em ${formatarData(pagamento.data)} (${pagamento.forma || "forma não informada"}), de ${cliente?.nome || "este cliente"}?\n\nO total pago, o saldo, o Dashboard, o Financeiro e os relatórios serão recalculados automaticamente.`;
+    if(!confirm(aviso)) return;
+    locacao.pagamentos=pagamentos.filter(p=>p.id!==pagamentoId);
+    atualizarResumoPagamentoLocacao(locacao);
+    locacao.atualizadaEm=new Date().toISOString();
+    salvarDados();
+    fecharModal();
+    atualizarTudo();
+    mostrarToast(`Recebimento excluído. Novo saldo: ${formatarMoeda(saldoDaLocacao(locacao))}.`);
 }
 
 function concluirFinalizacao(locacao){
@@ -4879,7 +4922,7 @@ function renderLocacoes(){
                 <td>
                     <div class="actions">
                         ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
-                        ${saldoDaLocacao(l)>0 ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">💰 Receber</button>` : ""}
+                        ${saldoDaLocacao(l)>0 || pagamentosDaLocacao(l).length ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">${saldoDaLocacao(l)>0 ? "💰 Receber" : "🧾 Pagamentos"}</button>` : ""}
                         <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
                         ${l.status==="Ativa" ? `<button class="btn btn-success btn-sm" onclick="finalizarLocacao('${l.id}')">Finalizar</button>` : ""}
                         <button class="btn btn-danger btn-sm" onclick="excluirLocacao('${l.id}')">Excluir</button>
@@ -5345,7 +5388,7 @@ function atualizarFinanceiro(){
             <td>${badgeStatusPagamento(l)}${valorRecebidoLocacao(l)>0 ? `<br><small>Último: ${escapeHtml(l.pagamento || "-")} · ${escapeHtml(formatarData(l.dataPagamento))}</small>` : ""}</td>
             <td>${badgeStatusLocacao(l.status)}</td>
             <td><div class="actions">
-                ${saldoDaLocacao(l)>0 ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">💰 Receber</button>` : ""}
+                ${saldoDaLocacao(l)>0 || pagamentosDaLocacao(l).length ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">${saldoDaLocacao(l)>0 ? "💰 Receber" : "🧾 Pagamentos"}</button>` : ""}
                 <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
                 ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
             </div></td>
@@ -5360,8 +5403,12 @@ function atualizarFinanceiro(){
             <td>${escapeHtml(cliente?.nome || "-")}</td><td>${ferramentasLocacaoHtml(l,3)}</td>
             <td>${escapeHtml(formatarData(l.retirada))}</td><td>${escapeHtml(p.forma || "-")}</td>
             <td>${formatarMoeda(p.valor)}</td>
-            <td>${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">#${escapeHtml(contrato.numero)}</button>` : "-"}</td></tr>`;
-    }).join("") : '<tr><td colspan="7" class="empty">Nenhum pagamento confirmado neste período.</td></tr>';
+            <td>${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">#${escapeHtml(contrato.numero)}</button>` : "-"}</td>
+            <td><div class="actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="abrirRecebimentoParcial('${l.id}','${p.id}')">Editar</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="excluirRecebimento('${l.id}','${p.id}')">Excluir</button>
+            </div></td></tr>`;
+    }).join("") : '<tr><td colspan="8" class="empty">Nenhum pagamento confirmado neste período.</td></tr>';
 }
 
 function mesAtualLocal(){ return dataHoje().slice(0,7); }
@@ -5569,6 +5616,10 @@ function atualizarResumoPagamentoLocacao(locacao){
     if(ultimo){
         if(locacao.pagamento!==ultimo.forma){locacao.pagamento=ultimo.forma;mudou=true;}
         if(locacao.dataPagamento!==ultimo.data){locacao.dataPagamento=ultimo.data;mudou=true;}
+    }else if(Array.isArray(locacao.pagamentos)){
+        if(locacao.pagamento){locacao.pagamento="";mudou=true;}
+        if(locacao.dataPagamento){locacao.dataPagamento="";mudou=true;}
+        if(Number(locacao.valorPago || 0)!==0){locacao.valorPago=0;mudou=true;}
     }
     return mudou;
 }
