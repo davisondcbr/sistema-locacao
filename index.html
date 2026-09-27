@@ -4832,7 +4832,7 @@ function badgeStatusPagamento(locacao){
     const status=statusPagamentoDaLocacao(locacao);
     if(status==="Pago") return '<span class="badge badge-green">Pago</span>';
     if(status==="Parcial") return '<span class="badge badge-yellow">Parcial</span>';
-    if(status==="Pendente") return '<span class="badge badge-yellow">A receber</span>';
+    if(status==="Pendente") return '<span class="badge badge-red">A receber</span>';
     return '<span class="badge badge-gray">Não informado</span>';
 }
 
