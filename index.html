@@ -1920,7 +1920,7 @@ textarea{
             <select id="finStatus" onchange="atualizarFinanceiro()">
                 <option value="">Todos</option>
                 <option value="Ativa">Ativas</option>
-                <option value="Finalizada">Finalizadas</option>
+                <option value="Finalizada">Devolvidas</option>
             </select>
         </label>
         <span class="financeiro-periodo" id="finPeriodoTexto">Mês atual</span>
@@ -4556,49 +4556,103 @@ function finalizarLocacao(id){
         atualizarTudo();
     }
     const saldo=saldoDaLocacao(locacao);
+    const recebido=valorRecebidoLocacao(locacao);
+    const cliente=clientes.find(c=>c.id===locacao.clienteId);
+    const contrato=contratos.find(c=>c.locacaoId===locacao.id);
 
-    if(saldo<=0){
-        if(!confirm("O pagamento já está registrado. Confirmar devolução e finalizar a locação?")) return;
-        concluirFinalizacao(locacao);
-        return;
-    }
-
-    abrirModal("Pagamento e devolução",`
-        <p class="info-box">Total atualizado: <strong>${formatarMoeda(locacao.valor)}</strong>. Já recebido: <strong>${formatarMoeda(valorRecebidoLocacao(locacao))}</strong>. Saldo para finalizar: <strong>${formatarMoeda(saldo)}</strong>. Escolha a forma e a data do recebimento.</p>
+    abrirModal("Registrar devolução",`
+        <p class="info-box"><strong>${escapeHtml(cliente?.nome || "Cliente não localizado")}</strong> · Contrato #${escapeHtml(contrato?.numero || "-")}<br>${escapeHtml(nomesFerramentasLocacao(locacao,4))}<br>Data da devolução: <strong>${escapeHtml(formatarData(dataHoje()))}</strong></p>
+        <div class="pagamento-painel">
+            <div><small>Total da locação</small><strong>${formatarMoeda(locacao.valor)}</strong></div>
+            <div><small>Total já pago</small><strong>${formatarMoeda(recebido)}</strong></div>
+            <div class="pagamento-saldo"><small>Saldo a receber</small><strong>${formatarMoeda(saldo)}</strong></div>
+        </div>
         <div class="form-grid">
-            <div class="form-group">
-                <label>Valor restante (R$)</label>
-                <input id="pagamentoFinalValor" type="number" step="0.01" value="${saldo.toFixed(2)}" readonly>
-            </div>
-            <div class="form-group">
-                <label>Forma de pagamento *</label>
-                <select id="pagamentoFinalForma">
-                    <option value="">Selecione...</option>
-                    <option value="Pix">Pix</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Outro">Outro</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Data em que recebeu *</label>
-                <input id="pagamentoFinalData" type="date" value="${dataHoje()}">
-            </div>
             <div class="form-group full">
-                <label>Quando foi recebido? *</label>
-                <select id="pagamentoFinalMomento">
-                    <option value="devolucao">Agora, na devolução</option>
-                    <option value="entrada">Já havia sido pago na entrada (registro antigo)</option>
+                <label>Como deseja registrar a devolução? *</label>
+                <select id="devolucaoFormaRegistro" onchange="atualizarCamposDevolucao()">
+                    ${saldo>0 ? `<option value="manter_pendente">Devolvido — manter ${formatarMoeda(saldo)} a receber</option>
+                    <option value="receber_agora">Devolvido — receber o saldo agora</option>` : '<option value="quitada">Devolvido — pagamento já quitado</option>'}
                 </select>
+                <small>A devolução libera as ferramentas para uma nova locação. O saldo pendente continuará disponível para receber depois.</small>
+            </div>
+        </div>
+        <div id="devolucaoPagamentoCampos" class="pagamento-extra" hidden>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Valor recebido agora (R$)</label>
+                    <input id="pagamentoFinalValor" type="number" step="0.01" value="${saldo.toFixed(2)}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Forma de pagamento *</label>
+                    <select id="pagamentoFinalForma">
+                        <option value="">Selecione...</option>
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão">Cartão</option>
+                        <option value="Boleto">Boleto</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data em que recebeu *</label>
+                    <input id="pagamentoFinalData" type="date" value="${dataHoje()}">
+                </div>
+                <div class="form-group">
+                    <label>Quando foi recebido? *</label>
+                    <select id="pagamentoFinalMomento">
+                        <option value="devolucao">Agora, na devolução</option>
+                        <option value="entrada">Já havia sido pago na entrada</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-            <button class="btn btn-success" onclick="confirmarPagamentoEFinalizar('${locacao.id}')">💰 Registrar e finalizar</button>
+            <button id="botaoConfirmarDevolucao" class="btn btn-success" onclick="confirmarDevolucaoLocacao('${locacao.id}')">📦 Confirmar devolução</button>
         </div>
     `);
-    document.getElementById("pagamentoFinalForma").value=locacao.pagamento || "";
+    const forma=document.getElementById("pagamentoFinalForma");
+    if(forma) forma.value=locacao.pagamento || "";
+    atualizarCamposDevolucao();
+}
+
+function atualizarCamposDevolucao(){
+    const acao=document.getElementById("devolucaoFormaRegistro")?.value;
+    const campos=document.getElementById("devolucaoPagamentoCampos");
+    const botao=document.getElementById("botaoConfirmarDevolucao");
+    if(campos) campos.hidden=acao!=="receber_agora";
+    if(botao) botao.textContent=acao==="receber_agora" ? "💰 Receber e devolver" : "📦 Confirmar devolução";
+}
+
+function confirmarDevolucaoLocacao(id){
+    const locacao=locacoes.find(l=>l.id===id);
+    if(!locacao || locacao.status!=="Ativa"){
+        mostrarToast("Locação ativa não encontrada.");return;
+    }
+    const acao=document.getElementById("devolucaoFormaRegistro")?.value;
+    if(acao==="receber_agora"){
+        confirmarPagamentoEFinalizar(id);
+        return;
+    }
+    if(!["manter_pendente","quitada"].includes(acao)){
+        mostrarToast("Selecione como deseja registrar a devolução.");return;
+    }
+    const saldo=saldoDaLocacao(locacao);
+    const mensagem=saldo>0
+        ? `Confirmar a devolução das ferramentas?\n\nElas serão liberadas para novas locações e o saldo de ${formatarMoeda(saldo)} continuará marcado como A receber.`
+        : "Confirmar a devolução das ferramentas? Elas serão liberadas para novas locações.";
+    if(!confirm(mensagem)) return;
+
+    if(saldo>0){
+        const pagamentos=pagamentosDaLocacao(locacao);
+        locacao.pagamentos=pagamentos;
+        const recebido=valorRecebidoLocacao(locacao);
+        locacao.pagamentoStatus=recebido>0 ? "Parcial" : "Pendente";
+        locacao.valorPago=recebido;
+        atualizarResumoPagamentoLocacao(locacao);
+    }
+    concluirFinalizacao(locacao,false);
 }
 
 function confirmarPagamentoEFinalizar(id){
@@ -4624,7 +4678,7 @@ function confirmarPagamentoEFinalizar(id){
     locacao.valorPago=valorRecebidoLocacao(locacao);
     locacao.dataPagamento=data;
     atualizarResumoPagamentoLocacao(locacao);
-    concluirFinalizacao(locacao);
+    concluirFinalizacao(locacao,true);
 }
 
 
@@ -4789,10 +4843,11 @@ function excluirRecebimento(locacaoId,pagamentoId){
     mostrarToast(`Recebimento excluído. Novo saldo: ${formatarMoeda(saldoDaLocacao(locacao))}.`);
 }
 
-function concluirFinalizacao(locacao){
+function concluirFinalizacao(locacao,pagamentoRegistrado=false){
     if(locacao.status!=="Ativa") return;
     locacao.status="Finalizada";
     locacao.devolvidaEm=dataHoje();
+    locacao.atualizadaEm=new Date().toISOString();
     corrigirDisponibilidade();
     const contrato=contratos.find(c=>c.locacaoId===locacao.id);
     if(contrato) contrato.status="Finalizado";
@@ -4800,7 +4855,12 @@ function concluirFinalizacao(locacao){
     salvarDados();
     fecharModal();
     atualizarTudo();
-    mostrarToast("Pagamento e devolução de todas as ferramentas registrados. Locação finalizada.");
+    const saldo=saldoDaLocacao(locacao);
+    mostrarToast(pagamentoRegistrado
+        ? "Pagamento e devolução registrados. Ferramentas disponíveis para nova locação."
+        : saldo>0
+            ? `Devolução registrada. Ferramentas disponíveis. Saldo de ${formatarMoeda(saldo)} mantido a receber.`
+            : "Devolução registrada. Ferramentas disponíveis para nova locação.");
 }
 
 
@@ -4822,10 +4882,14 @@ function excluirLocacao(id){
 }
 
 
+function textoStatusLocacao(status){
+    return status==="Finalizada" ? "Devolvida" : status || "-";
+}
+
 function badgeStatusLocacao(status){
     if(status==="Ativa") return `<span class="badge badge-blue">Ativa</span>`;
-    if(status==="Finalizada") return `<span class="badge badge-green">Finalizada</span>`;
-    return `<span class="badge badge-gray">${escapeHtml(status)}</span>`;
+    if(status==="Finalizada") return `<span class="badge badge-green">Devolvida</span>`;
+    return `<span class="badge badge-gray">${escapeHtml(textoStatusLocacao(status))}</span>`;
 }
 
 function badgeStatusPagamento(locacao){
@@ -4924,7 +4988,7 @@ function renderLocacoes(){
                         ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
                         ${saldoDaLocacao(l)>0 || pagamentosDaLocacao(l).length ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">${saldoDaLocacao(l)>0 ? "💰 Receber" : "🧾 Pagamentos"}</button>` : ""}
                         <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
-                        ${l.status==="Ativa" ? `<button class="btn btn-success btn-sm" onclick="finalizarLocacao('${l.id}')">Finalizar</button>` : ""}
+                        ${l.status==="Ativa" ? `<button class="btn btn-success btn-sm" onclick="finalizarLocacao('${l.id}')">📦 Devolver</button>` : ""}
                         <button class="btn btn-danger btn-sm" onclick="excluirLocacao('${l.id}')">Excluir</button>
                     </div>
                 </td>
@@ -5442,7 +5506,7 @@ function exportarFinanceiroCsv(){
                 nomesFerramentasLocacao(l),contratadoNoPeriodo(l,mes),
                 Number(l.valor || 0),Number(l.renovacoes || 0),Number(l.caucao || 0),conhecido ? recebido : "",
                 conhecido ? Math.max(0,Number(l.valor || 0)-recebido) : "",
-                statusPagamentoDaLocacao(l),l.pagamento || "",l.dataPagamento || "",l.status || ""];
+                statusPagamentoDaLocacao(l),l.pagamento || "",l.dataPagamento || "",textoStatusLocacao(l.status)];
         })
     ];
     const celula=valor=>{
@@ -5493,7 +5557,7 @@ function abrirRelatorioFinanceiro(){
             <td class="valor">${statusPagamento==="Não informado" ? "-" : formatarMoeda(valorRecebidoLocacao(l))}</td>
             <td class="valor">${statusPagamento==="Não informado" ? "-" : formatarMoeda(saldoDaLocacao(l))}</td>
             <td>${escapeHtml(statusPagamento)}<small>${pagamentosDaLocacao(l).length} recebimento(s)</small></td>
-            <td>${escapeHtml(l.status || "-")}</td>
+            <td>${escapeHtml(textoStatusLocacao(l.status))}</td>
         </tr>`;
     }).join("") : '<tr><td colspan="8" class="relatorio-vazio">Nenhuma locação encontrada para os filtros escolhidos.</td></tr>';
 
@@ -5664,13 +5728,13 @@ function renderGraficoSituacao(periodo){
     const circunferencia=2*Math.PI*62;
     const fracao=total ? ativas/total : 0;
     document.getElementById("finGraficoStatus").innerHTML=`
-        <svg viewBox="0 0 360 200" role="img" aria-label="${ativas} locações ativas e ${finalizadas} finalizadas">
+        <svg viewBox="0 0 360 200" role="img" aria-label="${ativas} locações ativas e ${finalizadas} devolvidas">
             <circle cx="100" cy="100" r="62" fill="none" stroke="${total ? '#16a34a' : '#e5e7eb'}" stroke-width="21"/>
             ${ativas ? `<circle cx="100" cy="100" r="62" fill="none" stroke="#2563eb" stroke-width="21" transform="rotate(-90 100 100)" stroke-dasharray="${fracao*circunferencia} ${circunferencia}"/>` : ""}
             <text x="100" y="95" text-anchor="middle" font-size="26" font-weight="bold" fill="#111827">${total}</text>
             <text x="100" y="117" text-anchor="middle" font-size="11" fill="#6b7280">contratos</text>
             <circle cx="210" cy="82" r="6" fill="#2563eb"/><text x="224" y="87" font-size="15" fill="#374151">Ativas: ${ativas}</text>
-            <circle cx="210" cy="118" r="6" fill="#16a34a"/><text x="224" y="123" font-size="15" fill="#374151">Finalizadas: ${finalizadas}</text>
+            <circle cx="210" cy="118" r="6" fill="#16a34a"/><text x="224" y="123" font-size="15" fill="#374151">Devolvidas: ${finalizadas}</text>
         </svg>`;
 }
 
