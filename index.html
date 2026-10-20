@@ -806,6 +806,17 @@ tr:hover td{
     color:#1e40af;
 }
 
+.badge-purple{
+    background:#ede9fe;
+    color:#6d28d9;
+}
+
+.locacao-reativada{
+    margin-top:5px;
+    border:1px solid #ddd6fe;
+    cursor:help;
+}
+
 .badge-gray{
     background:#e5e7eb;
     color:#374151;
@@ -4067,6 +4078,8 @@ function atualizarTotalLocacao(){
 function abrirNovaLocacao(id=null){
     const atual = id ? locacoes.find(l=>l.id===id) : null;
     if(id && !atual){ mostrarToast("Locação não encontrada."); return; }
+    const locacaoDevolvida=atual?.status==="Finalizada";
+    const locacaoReativada=Boolean(atual && reativacoesDaLocacao(atual).length);
     locacaoEditando = atual?.id || null;
     clienteSelecionadoLocacao = atual?.clienteId || null;
     itensOriginaisLocacao.clear();
@@ -4095,11 +4108,11 @@ function abrirNovaLocacao(id=null){
 
             <div class="form-group">
                 <label>Situação da locação</label>
-                <input value="${escapeHtml(atual?.status || "Nova locação")}" readonly>
+                <input value="${escapeHtml(atual ? textoStatusLocacao(atual.status) : "Nova locação")}${locacaoReativada ? " · Reativada" : ""}" readonly>
             </div>
 
             <div class="form-group full">
-                <div class="info-box">${atual ? "Modo de correção: você pode trocar, adicionar ou remover ferramentas e corrigir quantidade, cobrança, períodos, retirada e valores. O sistema impede quantidade acima do estoque; ao salvar, o mesmo contrato será atualizado e você poderá gerar outro PDF." : "Adicione os tipos de ferramenta e informe a quantidade de cada um. Cada item pode ter cobrança diária, semanal, mensal ou personalizada; o sistema bloqueia quantidades acima do estoque disponível."}</div>
+                <div class="info-box">${locacaoDevolvida ? "Esta locação está devolvida. Você pode corrigir cliente, ferramentas, retirada, devolução, cobrança diária, semanal, mensal ou personalizada e valores. As ferramentas somente voltarão a ficar reservadas depois que você clicar em “Reativar”." : atual ? `${locacaoReativada ? "↩ Esta locação já foi reativada após uma devolução. " : ""}Modo de correção: você pode trocar, adicionar ou remover ferramentas e corrigir quantidade, cobrança, períodos, retirada e valores. O sistema impede quantidade acima do estoque; ao salvar, o mesmo contrato será atualizado e você poderá gerar outro PDF.` : "Adicione os tipos de ferramenta e informe a quantidade de cada um. Cada item pode ter cobrança diária, semanal, mensal ou personalizada; o sistema bloqueia quantidades acima do estoque disponível."}</div>
                 <div class="locacao-itens" id="locacaoItens"></div>
                 <button type="button" class="btn btn-secondary" style="margin-top:12px;" onclick="adicionarItemLocacao()">＋ Adicionar outra ferramenta</button>
             </div>
@@ -4864,6 +4877,132 @@ function concluirFinalizacao(locacao,pagamentoRegistrado=false){
 }
 
 
+function reativacoesDaLocacao(locacao){
+    if(Array.isArray(locacao?.reativacoes)) return locacao.reativacoes;
+    if(locacao?.reativadaEm){
+        return [{
+            id:`reativacao-legada-${locacao.id}`,
+            reativadaEm:locacao.reativadaEm,
+            devolvidaEmAnterior:locacao.ultimaDevolucaoEm || ""
+        }];
+    }
+    return [];
+}
+
+
+function badgeReativacaoLocacao(locacao){
+    const historico=reativacoesDaLocacao(locacao);
+    if(!historico.length) return "";
+    const ultima=historico[historico.length-1] || {};
+    const data=String(ultima.reativadaEm || locacao.reativadaEm || "").slice(0,10);
+    const quantidade=historico.length;
+    const rotulo=quantidade>1 ? `↩ Reativada ${quantidade}×` : "↩ Reativada";
+    const titulo=`Esta locação foi reativada após uma devolução${dataCalendarioUTC(data) ? ` em ${formatarData(data)}` : ""}.${quantidade>1 ? ` Total de reativações: ${quantidade}.` : ""}`;
+    return `<br><span class="badge badge-purple locacao-reativada" title="${escapeHtml(titulo)}" aria-label="${escapeHtml(titulo)}">${rotulo}</span>`;
+}
+
+
+function problemasEstoqueReativacao(locacao){
+    const quantidades=new Map();
+    for(const item of itensDaLocacao(locacao)){
+        quantidades.set(item.ferramentaId,(quantidades.get(item.ferramentaId) || 0)+quantidadeItemLocacao(item));
+    }
+    const problemas=[];
+    for(const [ferramentaId,necessarias] of quantidades){
+        const ferramenta=ferramentas.find(f=>f.id===ferramentaId);
+        const disponiveis=estoqueDisponivelFerramenta(ferramentaId);
+        if(!ferramenta || necessarias>disponiveis){
+            problemas.push({
+                ferramentaId,
+                nome:ferramenta?.nome || "Ferramenta não localizada",
+                necessarias,
+                disponiveis
+            });
+        }
+    }
+    return problemas;
+}
+
+
+function abrirReativacaoLocacao(id){
+    const locacao=locacoes.find(l=>l.id===id);
+    if(!locacao || locacao.status!=="Finalizada"){
+        mostrarToast("Somente uma locação devolvida pode ser reativada.");return;
+    }
+    const cliente=clientes.find(c=>c.id===locacao.clienteId);
+    const contrato=contratos.find(c=>c.locacaoId===locacao.id);
+    const problemas=problemasEstoqueReativacao(locacao);
+    const itens=itensDaLocacao(locacao).map(item=>{
+        const ferramenta=ferramentas.find(f=>f.id===item.ferramentaId);
+        const quantidade=quantidadeItemLocacao(item);
+        const disponiveis=estoqueDisponivelFerramenta(item.ferramentaId);
+        return `<tr>
+            <td><strong>${escapeHtml(ferramenta?.nome || "Ferramenta não localizada")}</strong></td>
+            <td>${quantidade}</td>
+            <td>${disponiveis}</td>
+            <td>${quantidade<=disponiveis ? '<span class="badge badge-green">Disponível</span>' : '<span class="badge badge-red">Indisponível</span>'}</td>
+        </tr>`;
+    }).join("");
+    const aviso=problemas.length ? `<p class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b;"><strong>Não é possível reativar agora.</strong><br>${problemas.map(item=>`${escapeHtml(item.nome)}: precisa de ${item.necessarias}, mas há ${item.disponiveis} disponível(is).`).join("<br>")} Finalize outra locação, libere a manutenção ou ajuste o bloqueio antes de tentar novamente.</p>` :
+        '<p class="info-box" style="border-color:#c4b5fd;background:#f5f3ff;color:#5b21b6;"><strong>Ao confirmar, as ferramentas voltarão imediatamente para “locadas”.</strong> Elas não poderão ser escolhidas por outro cliente. Em seguida, a edição será aberta para ajustar retirada, devolução, cobrança e valores.</p>';
+
+    abrirModal("Reativar locação",`
+        <p class="info-box"><strong>${escapeHtml(cliente?.nome || "Cliente não localizado")}</strong> · Contrato #${escapeHtml(contrato?.numero || "-")}<br>Devolvida em: <strong>${escapeHtml(formatarData(locacao.devolvidaEm || locacao.ultimaDevolucaoEm))}</strong> · Saldo atual: <strong>${formatarMoeda(saldoDaLocacao(locacao))}</strong></p>
+        ${aviso}
+        <div class="table-wrapper"><table><thead><tr><th>Ferramenta</th><th>Qtd. necessária</th><th>Disponível agora</th><th>Conferência</th></tr></thead><tbody>${itens}</tbody></table></div>
+        <p style="margin-top:14px;color:#6b7280;font-size:13px;">Os recebimentos já registrados e o saldo a receber serão preservados. O mesmo contrato será reaberto.</p>
+        <div class="form-actions">
+            <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarReativacaoLocacao('${locacao.id}')" ${problemas.length ? "disabled" : ""}>↩ Reativar e editar</button>
+        </div>
+    `,"modal-larga");
+}
+
+
+function confirmarReativacaoLocacao(id){
+    const locacao=locacoes.find(l=>l.id===id);
+    if(!locacao || locacao.status!=="Finalizada"){
+        mostrarToast("Esta locação não está mais disponível para reativação.");return;
+    }
+    const problemas=problemasEstoqueReativacao(locacao);
+    if(problemas.length){
+        mostrarToast(`${problemas[0].nome}: estoque insuficiente para reativar.`);
+        abrirReativacaoLocacao(id);
+        return;
+    }
+
+    const agora=new Date().toISOString();
+    const devolvidaEmAnterior=locacao.devolvidaEm || locacao.ultimaDevolucaoEm || "";
+    locacao.reativacoes=[...reativacoesDaLocacao(locacao),{
+        id:gerarId(),
+        reativadaEm:agora,
+        devolvidaEmAnterior,
+        retiradaAnterior:locacao.retirada || "",
+        devolucaoPrevistaAnterior:locacao.devolucao || "",
+        valorAnterior:Number(locacao.valor || 0)
+    }];
+    locacao.reativadaEm=agora;
+    locacao.ultimaDevolucaoEm=devolvidaEmAnterior;
+    locacao.devolvidaEm="";
+    locacao.status="Ativa";
+    locacao.atualizadaEm=agora;
+
+    const contrato=contratos.find(c=>c.locacaoId===locacao.id);
+    if(contrato){
+        contrato.status="Ativo";
+        contrato.reativadoEm=agora;
+        contrato.atualizadoEm=agora;
+    }
+
+    corrigirDisponibilidade();
+    salvarDados();
+    fecharModal();
+    atualizarTudo();
+    mostrarToast("Locação reativada. As ferramentas voltaram para locadas; ajuste agora o novo período.");
+    setTimeout(()=>editarLocacao(id),120);
+}
+
+
 function excluirLocacao(id){
     if(!confirm("Excluir esta locação, seu contrato e o histórico financeiro correspondente?")) return;
     const locacao = locacoes.find(l=>l.id===id);
@@ -4982,13 +5121,14 @@ function renderLocacoes(){
                 <td>${textoCobranca(l.tipoCobranca)}${l.periodosContratados ? `<br><small>${l.periodosContratados} período(s) inicial(is)</small>` : ""}</td>
                 <td>${formatarMoeda(l.valor)}</td>
                 <td>${resumoPagamentoLocacaoHtml(l)}</td>
-                <td>${badgeStatusLocacao(l.status)}</td>
+                <td>${badgeStatusLocacao(l.status)}${badgeReativacaoLocacao(l)}</td>
                 <td>
                     <div class="actions">
                         ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
                         ${saldoDaLocacao(l)>0 || pagamentosDaLocacao(l).length ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">${saldoDaLocacao(l)>0 ? "💰 Receber" : "🧾 Pagamentos"}</button>` : ""}
                         <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
                         ${l.status==="Ativa" ? `<button class="btn btn-success btn-sm" onclick="finalizarLocacao('${l.id}')">📦 Devolver</button>` : ""}
+                        ${l.status==="Finalizada" ? `<button class="btn btn-warning btn-sm" onclick="abrirReativacaoLocacao('${l.id}')">↩ Reativar</button>` : ""}
                         <button class="btn btn-danger btn-sm" onclick="excluirLocacao('${l.id}')">Excluir</button>
                     </div>
                 </td>
@@ -5056,7 +5196,7 @@ function renderContratos(){
                 <td>${escapeHtml(cliente?.nome || "-")}</td>
                 <td>${locacao ? ferramentasLocacaoHtml(locacao,3) : "-"}</td>
                 <td>${formatarData(locacao?.retirada)}</td>
-                <td>${badgeStatusContrato(c.status)}</td>
+                <td>${badgeStatusContrato(c.status)}${locacao ? badgeReativacaoLocacao(locacao) : ""}</td>
                 <td>
                     <div class="actions">
                         ${locacao ? `<button class="btn btn-secondary btn-sm" onclick="editarLocacao('${locacao.id}')">Editar locação</button>` : ""}
@@ -5112,6 +5252,7 @@ function visualizarContrato(id){
             <span class="contrato-a4-status" id="contratoA4Status">Ajustando o contrato para A4...</span>
             <button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>
             <button class="btn btn-secondary" onclick="fecharModal();editarLocacao('${locacao.id}')">✏️ Editar locação</button>
+            ${locacao.status==="Finalizada" ? `<button class="btn btn-warning" onclick="fecharModal();abrirReativacaoLocacao('${locacao.id}')">↩ Reativar locação</button>` : ""}
             <button class="btn btn-primary" onclick="imprimirContrato('${numeroArquivo}')">🖨️ Imprimir / Salvar PDF</button>
         </div>
 
@@ -5450,10 +5591,11 @@ function atualizarFinanceiro(){
             <td>${conhecido ? formatarMoeda(recebidoLocacao) : "—"}</td>
             <td>${conhecido ? formatarMoeda(Math.max(0,Number(l.valor || 0)-recebidoLocacao)) : "—"}</td>
             <td>${badgeStatusPagamento(l)}${valorRecebidoLocacao(l)>0 ? `<br><small>Último: ${escapeHtml(l.pagamento || "-")} · ${escapeHtml(formatarData(l.dataPagamento))}</small>` : ""}</td>
-            <td>${badgeStatusLocacao(l.status)}</td>
+            <td>${badgeStatusLocacao(l.status)}${badgeReativacaoLocacao(l)}</td>
             <td><div class="actions">
                 ${saldoDaLocacao(l)>0 || pagamentosDaLocacao(l).length ? `<button class="btn btn-warning btn-sm" onclick="abrirRecebimentoParcial('${l.id}')">${saldoDaLocacao(l)>0 ? "💰 Receber" : "🧾 Pagamentos"}</button>` : ""}
                 <button class="btn btn-secondary btn-sm" onclick="editarLocacao('${l.id}')">Editar</button>
+                ${l.status==="Finalizada" ? `<button class="btn btn-warning btn-sm" onclick="abrirReativacaoLocacao('${l.id}')">↩ Reativar</button>` : ""}
                 ${contrato ? `<button class="btn btn-primary btn-sm" onclick="visualizarContrato('${contrato.id}')">Contrato</button>` : ""}
             </div></td>
         </tr>`;
@@ -5786,7 +5928,11 @@ function atualizarDashboard(){
     document.getElementById("dashPagamentosParciais").textContent=pagamentosParciais;
 
     const tbody=document.getElementById("dashboardLocacoes");
-    const recentes=locacoes.slice().reverse().slice(0,8);
+    const recentes=locacoes.slice().sort((a,b)=>{
+        const dataA=Date.parse(a.atualizadaEm || a.reativadaEm || a.criadaEm || "") || 0;
+        const dataB=Date.parse(b.atualizadaEm || b.reativadaEm || b.criadaEm || "") || 0;
+        return dataB-dataA;
+    }).slice(0,8);
 
     if(!recentes.length){
         tbody.innerHTML=`<tr><td colspan="6" class="empty">Nenhuma locação cadastrada.</td></tr>`;
@@ -5802,7 +5948,7 @@ function atualizarDashboard(){
                 <td>${textoCobranca(l.tipoCobranca)}</td>
                 <td><strong>${formatarMoeda(l.valor)}</strong><br><small>Pago: ${formatarMoeda(valorRecebidoLocacao(l))} · Falta: ${formatarMoeda(saldoDaLocacao(l))}</small></td>
                 <td>${badgeStatusPagamento(l)}</td>
-                <td>${badgeStatusLocacao(l.status)}</td>
+                <td>${badgeStatusLocacao(l.status)}${badgeReativacaoLocacao(l)}</td>
             </tr>
         `;
     }).join("");
