@@ -1507,7 +1507,7 @@ textarea{
 
     <div class="sync-controles">
         <button type="button" class="sync-botao" onclick="abrirPainelConexoes()" title="Gerenciar servidores JSONBin" aria-label="Gerenciar conexões JSONBin">⚙ <span>Conexões</span></button>
-        <button type="button" class="sync-botao" onclick="atualizarDaNuvem(true)" title="Buscar dados do JSONBin agora" aria-label="Atualizar dados agora">⟳ <span>Atualizar</span></button>
+        <button type="button" class="sync-botao" onclick="atualizarDaNuvem(true)" title="Buscar dados do JSONBin agora (consome 1 solicitação)" aria-label="Atualizar dados agora">⟳ <span>Atualizar</span></button>
         <button type="button" id="resolverConflitoBotao" class="sync-botao" onclick="abrirResolucaoConflito()" style="display:none;color:#b91c1c;border-color:#fecaca;" title="Resolver alterações diferentes entre dispositivos">⚠ <span>Resolver</span></button>
         <div style="text-align:right;font-size:13px;">
             <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
@@ -1556,9 +1556,9 @@ textarea{
             <div><small>Solicitações restantes</small><strong id="bancoQuotaRestante">—</strong></div>
         </div>
         <p class="banco-status-mensagem" id="bancoMensagem" role="status">Entre no sistema para verificar a conexão.</p>
-        <p class="banco-status-ajuda">Qualidade estimada pelo tempo da última leitura do JSONBin: boa até 800 ms, média até 2,5 s, ruim acima disso ou quando a operação falhar.</p>
+        <p class="banco-status-ajuda"><strong>Modo econômico ativo:</strong> entrar, navegar pelos menus, abrir cadastros, contratos e relatórios não consome solicitações. Use “Atualizar” para buscar mudanças feitas em outro aparelho. A qualidade é medida na última leitura: boa até 800 ms, média até 2,5 s e ruim acima disso ou quando houver falha.</p>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="atualizarDaNuvem(true)">⟳ Verificar conexão agora</button>
+            <button type="button" class="btn btn-secondary" onclick="atualizarDaNuvem(true)" title="Consome 1 solicitação de leitura">⟳ Verificar conexão agora</button>
             <button type="button" class="btn btn-secondary" onclick="abrirConfigurarConexao()">⚙ Configurar conexão</button>
         </div>
     </div>
@@ -2173,7 +2173,7 @@ textarea{
     </div>
 
     <div class="quota-explicacao">
-        <strong>Como funciona o contador:</strong> o JSONBin não oferece, pela API pública documentada, o número exato mostrado no Dashboard. O sistema usa o valor confirmado por você e desconta automaticamente cada leitura e gravação que ele realizar. Caso o JSONBin envie um cabeçalho de saldo, o valor será ajustado automaticamente. Você pode recalibrar pelo número exibido no Dashboard a qualquer momento. Cada servidor de reserva deve pertencer a uma conta JSONBin diferente, pois vários Bins na mesma conta compartilham o mesmo limite.
+        <strong>Como funciona o contador:</strong> entrar e apenas navegar no sistema não gasta solicitações. O contador diminui ao salvar alterações, usar “Atualizar”, testar uma conexão ou migrar de servidor. O JSONBin não oferece, pela API pública documentada, o número exato mostrado no Dashboard; por isso o sistema parte do valor confirmado por você e desconta cada leitura e gravação que realizar. Caso o JSONBin envie um cabeçalho de saldo, o valor será ajustado automaticamente. Você pode recalibrar pelo número exibido no Dashboard a qualquer momento. Cada servidor de reserva deve pertencer a uma conta JSONBin diferente, pois vários Bins na mesma conta compartilham o mesmo limite.
     </div>
 
     <div id="listaServidores" class="servidor-resumo-grid"></div>
@@ -2258,7 +2258,7 @@ function entrarNoSistema(event){
     atualizarTudo();
     iniciarAtualizacaoAutomatica();
     if(conexaoJSONBin.chave){
-        carregarDadosDaNuvem();
+        estadoSincronizacao("Modo econômico: dados deste aparelho. Clique em Atualizar para buscar mudanças de outros dispositivos.",false,"local");
     }else{
         estadoSincronizacao("Configure o acesso ao JSONBin",true);
         abrirConfigurarConexao();
@@ -2326,7 +2326,8 @@ let redirecionamentoServidor = (()=>{
 })();
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
 const VERSAO_BANCO = 7;
-const INTERVALO_ATUALIZACAO = 180000; // Economiza créditos; alterações continuam sendo enviadas imediatamente.
+const INTERVALO_INDICADOR_LOCAL = 60000; // Atualiza somente textos da tela; não acessa o JSONBin.
+const TEMPO_TESTE_CONEXAO_ANTIGO = 30*60000;
 const AUSENTE = Symbol("campo ausente");
 
 function carregarConexaoLegada(){
@@ -2553,7 +2554,7 @@ function permitirAlteracaoPorLimite(mostrarMensagem=true){
 }
 
 function atualizarIndicadorBanco(){
-    const antiga=bancoEstado.ultimaLeitura && Date.now()-Date.parse(bancoEstado.ultimaLeitura)>3*INTERVALO_ATUALIZACAO;
+    const antiga=bancoEstado.ultimaLeitura && Date.now()-Date.parse(bancoEstado.ultimaLeitura)>TEMPO_TESTE_CONEXAO_ANTIGO;
     const qualidade=bancoEstado.qualidade;
     const rotulos={boa:"● Conexão boa (OK)",media:"● Conexão média",ruim:"● Conexão ruim"};
     const verificando=qualidade==="aguardando" && bancoEstado.fase==="verificando";
@@ -3632,27 +3633,19 @@ function carregarDadosDaNuvem(){
 function iniciarAtualizacaoAutomatica(){
     if(atualizacaoAutomaticaIniciada) return;
     atualizacaoAutomaticaIniciada=true;
-    // Polling contido para não consumir rapidamente o limite de requisições do JSONBin.
+    // Modo econômico: este temporizador atualiza apenas a interface local.
+    // Nenhuma leitura do JSONBin acontece ao entrar, navegar, focar ou reabrir a aba.
     setInterval(()=>{
         atualizarIndicadorBanco();
-        if(document.visibilityState==="hidden") return;
-        if(Date.now()-ultimaInteracao>5*60000) return;
-        if(Date.now()-ultimoAcessoNuvem>=INTERVALO_ATUALIZACAO) atualizarDaNuvem();
-    },INTERVALO_ATUALIZACAO);
+    },INTERVALO_INDICADOR_LOCAL);
     const registrarInteracao=()=>{
-        const estavaInativo=Date.now()-ultimaInteracao>5*60000;
         ultimaInteracao=Date.now();
-        if(estavaInativo && Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
     };
     document.addEventListener("pointerdown",registrarInteracao);
     document.addEventListener("keydown",registrarInteracao);
-    document.addEventListener("visibilitychange",()=>{
-        if(document.visibilityState==="visible" && Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
+    window.addEventListener("online",()=>{
+        estadoSincronizacao("Internet disponível. Modo econômico ativo; use Atualizar para buscar mudanças.",false,"local");
     });
-    window.addEventListener("focus",()=>{
-        if(Date.now()-ultimoAcessoNuvem>15000) atualizarDaNuvem();
-    });
-    window.addEventListener("online",()=>atualizarDaNuvem());
 }
 
 function baixarBackupDados(){
