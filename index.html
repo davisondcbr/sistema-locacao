@@ -251,13 +251,76 @@ body.acesso-bloqueado .tela-acesso{
 .banco-status-card{margin-bottom:18px;padding:20px;}
 .banco-status-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .banco-status-cabecalho h3{font-size:17px;}
-.banco-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0;}
+.banco-status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0;}
 .banco-status-grid>div{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;}
 .banco-status-grid small{display:block;color:#6b7280;margin-bottom:6px;}
 .banco-status-grid strong{font-size:14px;word-break:break-word;}
 .banco-status-mensagem{font-size:13px;color:#4b5563;margin-bottom:12px;word-break:break-word;}
 .banco-status-ajuda{font-size:12px;color:#6b7280;margin-bottom:12px;}
 #estadoSincronizacao{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* =========================
+   SERVIDORES E LIMITE JSONBIN
+========================= */
+.quota-topo{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0;white-space:nowrap;margin-right:5px;}
+.quota-topo.atencao{background:#fff7ed;color:#9a3412;border-color:#fed7aa;}
+.quota-topo.critico{background:#fef2f2;color:#991b1b;border-color:#fecaca;animation:pulsarQuota 1.4s ease-in-out infinite;}
+.alerta-limite-global{display:none;position:sticky;top:70px;z-index:490;margin:0;padding:18px 28px;background:linear-gradient(90deg,#fff7ed,#ffedd5);border-bottom:2px solid #f97316;color:#9a3412;box-shadow:0 10px 25px rgba(154,52,18,.13);align-items:center;justify-content:space-between;gap:18px;}
+.alerta-limite-global.visivel{display:flex;}
+.alerta-limite-global.critico{background:linear-gradient(90deg,#7f1d1d,#b91c1c);border-color:#ef4444;color:#fff;animation:pulsarFundo 1.8s ease-in-out infinite;}
+.alerta-limite-global strong{display:block;font-size:20px;margin-bottom:4px;}
+.alerta-limite-global p{margin:0;font-size:14px;line-height:1.45;}
+.alerta-limite-global .btn{flex:0 0 auto;background:#fff;color:#991b1b;border-color:#fff;}
+.servidor-resumo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:18px;}
+.servidor-card{position:relative;padding:20px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow);overflow:hidden;}
+.servidor-card.ativo{border:2px solid #2563eb;}
+.servidor-card.critico{border-color:#dc2626;background:#fffafa;}
+.servidor-card-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.servidor-card h3{font-size:17px;margin-bottom:5px;}
+.servidor-card small{color:#6b7280;word-break:break-all;}
+.servidor-selo{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;background:#e5e7eb;color:#374151;white-space:nowrap;}
+.servidor-selo.ativo{background:#dbeafe;color:#1d4ed8;}
+.servidor-selo.reserva{background:#f3f4f6;color:#4b5563;}
+.servidor-saldo{font-size:34px;font-weight:900;line-height:1;color:#111827;margin:8px 0 4px;}
+.servidor-saldo.atencao{color:#c2410c;}
+.servidor-saldo.critico{color:#b91c1c;}
+.servidor-barra{height:11px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:13px 0 8px;}
+.servidor-barra>span{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:inherit;transition:width .35s ease;}
+.servidor-barra>span.atencao{background:linear-gradient(90deg,#f59e0b,#f97316);}
+.servidor-barra>span.critico{background:linear-gradient(90deg,#dc2626,#ef4444);}
+.servidor-detalhes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:15px 0;font-size:12px;color:#4b5563;}
+.servidor-detalhes strong{display:block;color:#111827;margin-top:2px;font-size:13px;}
+.servidor-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+.servidor-acoes .btn{padding:9px 11px;font-size:12px;}
+.quota-explicacao{margin-bottom:18px;padding:16px 18px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;line-height:1.5;font-size:13px;}
+.somente-leitura-aviso{display:none;margin-bottom:18px;padding:18px;border-radius:12px;background:#fef2f2;border:2px solid #ef4444;color:#991b1b;font-weight:700;}
+body.modo-somente-leitura .somente-leitura-aviso{display:block;}
+.migracao-overlay{position:fixed;inset:0;z-index:120000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(17,24,39,.9);backdrop-filter:blur(6px);}
+.migracao-overlay.aberta{display:flex;}
+.migracao-caixa{width:min(560px,100%);padding:30px;border-radius:20px;background:#fff;box-shadow:0 28px 80px rgba(0,0,0,.35);text-align:center;}
+.migracao-icone{width:78px;height:78px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#dbeafe;color:#2563eb;font-size:38px;font-weight:900;}
+.migracao-icone.carregando{border:7px solid #dbeafe;border-top-color:#2563eb;background:#fff;animation:girar .8s linear infinite;font-size:0;}
+.migracao-icone.sucesso{background:#dcfce7;color:#15803d;animation:confirmarMigracao .5s ease both;}
+.migracao-icone.erro{background:#fee2e2;color:#b91c1c;}
+.migracao-caixa h2{margin-bottom:8px;font-size:24px;}
+.migracao-caixa p{color:#6b7280;line-height:1.5;}
+.migracao-progresso{height:11px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:22px 0 12px;}
+.migracao-progresso span{display:block;height:100%;width:0;background:linear-gradient(90deg,#2563eb,#60a5fa);transition:width .45s ease;}
+.migracao-etapas{text-align:left;margin-top:18px;border-top:1px solid var(--border);padding-top:14px;font-size:13px;color:#6b7280;}
+.migracao-etapas div{padding:6px 0;}
+.migracao-etapas .ok{color:#15803d;font-weight:700;}
+@keyframes pulsarQuota{50%{transform:scale(1.04);}}
+@keyframes pulsarFundo{50%{box-shadow:0 10px 32px rgba(220,38,38,.38);}}
+@keyframes confirmarMigracao{0%{transform:scale(.35);opacity:0;}70%{transform:scale(1.15);}100%{transform:scale(1);opacity:1;}}
+
+@media(max-width:780px){
+    .alerta-limite-global{top:62px;padding:15px;align-items:flex-start;flex-direction:column;}
+    .alerta-limite-global strong{font-size:17px;}
+    .alerta-limite-global .btn{width:100%;}
+    .quota-topo{display:none;}
+    .servidor-resumo-grid{grid-template-columns:1fr;}
+    .servidor-detalhes{grid-template-columns:1fr;}
+}
 
 .mobile-menu{
     display:none;
@@ -1421,6 +1484,10 @@ textarea{
             <span>⚙️</span> Configurações
         </button>
 
+        <button onclick="mostrarSecao('conexoes',this)">
+            <span>🌐</span> Conexões <em id="menuQuotaRestante" class="menu-contagem">—</em>
+        </button>
+
     </nav>
 
 </aside>
@@ -1439,17 +1506,26 @@ textarea{
     </div>
 
     <div class="sync-controles">
-        <button type="button" class="sync-botao" onclick="abrirConfigurarConexao()" title="Configurar acesso ao JSONBin" aria-label="Configurar conexão JSONBin">⚙ <span>Conexão</span></button>
+        <button type="button" class="sync-botao" onclick="abrirPainelConexoes()" title="Gerenciar servidores JSONBin" aria-label="Gerenciar conexões JSONBin">⚙ <span>Conexões</span></button>
         <button type="button" class="sync-botao" onclick="atualizarDaNuvem(true)" title="Buscar dados do JSONBin agora" aria-label="Atualizar dados agora">⟳ <span>Atualizar</span></button>
         <button type="button" id="resolverConflitoBotao" class="sync-botao" onclick="abrirResolucaoConflito()" style="display:none;color:#b91c1c;border-color:#fecaca;" title="Resolver alterações diferentes entre dispositivos">⚠ <span>Resolver</span></button>
         <div style="text-align:right;font-size:13px;">
             <div id="empresaTopbar" style="color:#6b7280;">Sistema de Locação</div>
+            <span id="quotaTopo" class="quota-topo">☁ — solicitações</span>
             <span id="bancoSeloTopo" class="banco-selo">● Ainda não testada</span>
             <small id="estadoSincronizacao" role="status" style="color:#6b7280;">Aguardando acesso</small>
         </div>
     </div>
 
 </header>
+
+<div class="alerta-limite-global" id="alertaLimiteGlobal" role="alert">
+    <div>
+        <strong id="alertaLimiteTitulo">Limite do servidor próximo do fim</strong>
+        <p id="alertaLimiteTexto">Cadastre um novo servidor para manter o sistema funcionando.</p>
+    </div>
+    <button type="button" class="btn" onclick="abrirPainelConexoes()">🌐 Abrir Conexões</button>
+</div>
 
 <div class="content">
 
@@ -1476,6 +1552,8 @@ textarea{
             <div><small>Leitura do JSONBin</small><strong id="bancoUltimaLeitura">Ainda não verificada</strong></div>
             <div><small>Última gravação deste aparelho</small><strong id="bancoUltimaGravacao">Ainda não confirmada</strong></div>
             <div><small>Alterações neste aparelho</small><strong id="bancoPendencias">Nenhuma pendente</strong></div>
+            <div><small>Servidor ativo</small><strong id="bancoServidorAtivo">Servidor principal</strong></div>
+            <div><small>Solicitações restantes</small><strong id="bancoQuotaRestante">—</strong></div>
         </div>
         <p class="banco-status-mensagem" id="bancoMensagem" role="status">Entre no sistema para verificar a conexão.</p>
         <p class="banco-status-ajuda">Qualidade estimada pelo tempo da última leitura do JSONBin: boa até 800 ms, média até 2,5 s, ruim acima disso ou quando a operação falhar.</p>
@@ -2075,6 +2153,42 @@ textarea{
 
 </section>
 
+
+<!-- =========================
+     CONEXOES E SERVIDORES
+========================= -->
+
+<section id="conexoes" class="secao">
+
+    <div class="page-title">
+        <div>
+            <h1>Conexões e servidores</h1>
+            <p>Controle o limite do JSONBin e migre o banco de dados com segurança</p>
+        </div>
+        <button class="btn btn-primary" type="button" onclick="abrirAdicionarServidor()">➕ Adicionar novo servidor</button>
+    </div>
+
+    <div class="somente-leitura-aviso" id="somenteLeituraAviso">
+        🔒 O servidor ativo chegou à reserva de segurança. O sistema está em modo somente leitura: consultas, contratos, relatórios e backups continuam disponíveis, mas alterações ficam bloqueadas até a migração.
+    </div>
+
+    <div class="quota-explicacao">
+        <strong>Como funciona o contador:</strong> o JSONBin não oferece, pela API pública documentada, o número exato mostrado no Dashboard. O sistema usa o valor confirmado por você e desconta automaticamente cada leitura e gravação que ele realizar. Caso o JSONBin envie um cabeçalho de saldo, o valor será ajustado automaticamente. Você pode recalibrar pelo número exibido no Dashboard a qualquer momento. Cada servidor de reserva deve pertencer a uma conta JSONBin diferente, pois vários Bins na mesma conta compartilham o mesmo limite.
+    </div>
+
+    <div id="listaServidores" class="servidor-resumo-grid"></div>
+
+    <div class="card" style="padding:20px;">
+        <h3 style="margin-bottom:8px;">Segurança da migração</h3>
+        <p style="color:#6b7280;line-height:1.55;margin-bottom:14px;">A migração testa a nova conta, copia o banco completo, lê novamente o destino e confere o conteúdo antes de ativá-lo. O servidor anterior não é apagado e permanece como cópia de segurança.</p>
+        <div class="form-actions">
+            <button class="btn btn-secondary" type="button" onclick="baixarBackupDados()">⬇️ Baixar backup agora</button>
+            <button class="btn btn-secondary" type="button" onclick="window.open('https://jsonbin.io/app/dashboard','_blank','noopener')">↗ Abrir Dashboard JSONBin</button>
+        </div>
+    </div>
+
+</section>
+
 </div>
 </main>
 </div>
@@ -2105,6 +2219,19 @@ textarea{
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="migracao-overlay" id="migracaoOverlay" role="dialog" aria-modal="true" aria-labelledby="migracaoTitulo">
+    <div class="migracao-caixa">
+        <div class="migracao-icone carregando" id="migracaoIcone">↻</div>
+        <h2 id="migracaoTitulo">Preparando migração</h2>
+        <p id="migracaoMensagem">Aguarde. Não feche esta página.</p>
+        <div class="migracao-progresso"><span id="migracaoBarra"></span></div>
+        <div class="migracao-etapas" id="migracaoEtapas"></div>
+        <div class="form-actions" id="migracaoAcoes" style="justify-content:center;margin-top:18px;display:none;">
+            <button class="btn btn-primary" type="button" onclick="fecharTelaMigracao()">Continuar</button>
+        </div>
+    </div>
+</div>
 
 
 <script>
@@ -2173,10 +2300,15 @@ if(!config.termo){
 }
 
 /* =====================================================
-   BANCO DE DADOS - JSONBIN.IO (COM MASTER KEY)
+   BANCO DE DADOS - JSONBIN.IO E GESTÃO DE SERVIDORES
 ===================================================== */
 const BIN_ID = "6aadca2bac6210605ade2bac";
 const JSONBIN_API_BASE = "https://api.jsonbin.io/v3/b";
+const SOLICITACOES_CONTA_NOVA = 10000;
+/* Valor confirmado no Dashboard em 20/10/2026. Pode ser recalibrado em Conexões. */
+const SOLICITACOES_ATUAIS_CONFIRMADAS = 7685;
+const LIMITE_AVISO_SERVIDOR = 2500;
+const LIMITE_BLOQUEIO_SERVIDOR = 2000;
 
 let filaSalvamento = null;
 let atualizacaoEmAndamento = null;
@@ -2188,25 +2320,127 @@ let ultimaInteracao = Date.now();
 let temporizadorTentativa = null;
 let atrasoTentativa = 15000;
 let conflitoPendente = localStorage.getItem("loc_sync_conflict")==="1";
+let redirecionamentoServidor = (()=>{
+    try{return JSON.parse(localStorage.getItem("loc_jsonbin_redirecionamento") || "null");}
+    catch(_erro){return null;}
+})();
 const CAMPOS_BANCO = ["clientes", "ferramentas", "locacoes", "contratos"];
 const VERSAO_BANCO = 7;
-const INTERVALO_ATUALIZACAO = 60000; // Enquanto esta janela estiver visível.
+const INTERVALO_ATUALIZACAO = 180000; // Economiza créditos; alterações continuam sendo enviadas imediatamente.
 const AUSENTE = Symbol("campo ausente");
 
-function carregarConexaoLocal(){
+function carregarConexaoLegada(){
     try{
         const salvo=JSON.parse(localStorage.getItem("loc_jsonbin_conexao") || "{}");
         return {
             binId:typeof salvo.binId==="string" && salvo.binId ? salvo.binId : BIN_ID,
             tipoChave:salvo.tipoChave==="master" ? "master" : "access",
-            chave:typeof salvo.chave==="string" ? salvo.chave : ""
+            chave:typeof salvo.chave==="string" ? salvo.chave : "",
+            restantesEstimadas:Number.isFinite(Number(salvo.restantesEstimadas)) ? Number(salvo.restantesEstimadas) : null
         };
     }catch(_erro){
-        return {binId:BIN_ID,tipoChave:"access",chave:""};
+        return {binId:BIN_ID,tipoChave:"access",chave:"",restantesEstimadas:null};
     }
 }
 
-let conexaoJSONBin=carregarConexaoLocal();
+function normalizarServidorJSONBin(servidor,indice=0){
+    const binId=typeof servidor?.binId==="string" && servidor.binId ? servidor.binId : BIN_ID;
+    const limite=Number.isInteger(Number(servidor?.limiteInicial)) && Number(servidor.limiteInicial)>0 ?
+        Number(servidor.limiteInicial) : SOLICITACOES_CONTA_NOVA;
+    const padrao=binId===BIN_ID ? SOLICITACOES_ATUAIS_CONFIRMADAS : limite;
+    const restantes=Number.isFinite(Number(servidor?.restantesEstimadas)) ?
+        Math.max(0,Math.min(limite,Math.floor(Number(servidor.restantesEstimadas)))) : padrao;
+    return {
+        id:typeof servidor?.id==="string" && servidor.id ? servidor.id : `servidor-${binId}-${indice}`,
+        nome:typeof servidor?.nome==="string" && servidor.nome.trim() ? servidor.nome.trim() : indice ? `Servidor ${indice+1}` : "Servidor atual",
+        binId,
+        tipoChave:servidor?.tipoChave==="master" ? "master" : "access",
+        chave:typeof servidor?.chave==="string" ? servidor.chave : "",
+        limiteInicial:limite,
+        restantesEstimadas:restantes,
+        requisicoesSistema:Math.max(0,Number(servidor?.requisicoesSistema) || 0),
+        confirmadoEm:servidor?.confirmadoEm || (binId===BIN_ID ? "2026-10-20T10:53:47.000Z" : new Date().toISOString()),
+        ultimaOperacao:servidor?.ultimaOperacao || "",
+        atualizadoEm:servidor?.atualizadoEm || null,
+        origemContagem:servidor?.origemContagem || "confirmacao-manual",
+        ativo:Boolean(servidor?.ativo)
+    };
+}
+
+function carregarServidoresJSONBin(){
+    let salvos=[];
+    try{
+        const valor=JSON.parse(localStorage.getItem("loc_jsonbin_servidores") || "[]");
+        if(Array.isArray(valor)) salvos=valor;
+    }catch(_erro){/* A conexão legada será preservada abaixo. */}
+    const legado=carregarConexaoLegada();
+    if(!salvos.some(item=>item?.binId===legado.binId)){
+        salvos.unshift({
+            id:`servidor-${legado.binId}`,
+            nome:"Servidor atual",
+            ...legado,
+            limiteInicial:SOLICITACOES_CONTA_NOVA,
+            restantesEstimadas:legado.restantesEstimadas ?? (legado.binId===BIN_ID ? SOLICITACOES_ATUAIS_CONFIRMADAS : SOLICITACOES_CONTA_NOVA),
+            ativo:true
+        });
+    }
+    const lista=salvos.map(normalizarServidorJSONBin);
+    const ativoSalvo=localStorage.getItem("loc_jsonbin_servidor_ativo");
+    let ativo=lista.find(item=>item.id===ativoSalvo) || lista.find(item=>item.ativo) || lista.find(item=>item.binId===legado.binId) || lista[0];
+    lista.forEach(item=>item.ativo=item===ativo);
+    return lista;
+}
+
+let servidoresJSONBin=carregarServidoresJSONBin();
+let conexaoJSONBin=servidoresJSONBin.find(item=>item.ativo) || servidoresJSONBin[0];
+
+function salvarServidoresJSONBin(){
+    try{
+        localStorage.setItem("loc_jsonbin_servidores",JSON.stringify(servidoresJSONBin));
+        if(conexaoJSONBin){
+            localStorage.setItem("loc_jsonbin_servidor_ativo",conexaoJSONBin.id);
+            localStorage.setItem("loc_jsonbin_conexao",JSON.stringify(conexaoJSONBin));
+        }
+    }catch(erro){
+        console.warn("Não foi possível guardar a lista de servidores neste navegador.",erro);
+    }
+}
+
+function localizarServidorJSONBin(conexao){
+    return servidoresJSONBin.find(item=>item===conexao || item.id===conexao?.id) ||
+        servidoresJSONBin.find(item=>item.binId===conexao?.binId) || null;
+}
+
+function registrarConsumoJSONBin(conexao,resposta,operacao){
+    const servidor=localizarServidorJSONBin(conexao);
+    if(!servidor) return;
+    let saldoInformado=null;
+    for(const cabecalho of ["x-requests-remaining","x-request-credits-remaining","x-pending-requests"]){
+        const texto=resposta?.headers?.get?.(cabecalho);
+        if(texto===null || texto===undefined || String(texto).trim()==="") continue;
+        const valor=Number(texto);
+        if(Number.isFinite(valor) && valor>=0){saldoInformado=Math.floor(valor);break;}
+    }
+    servidor.restantesEstimadas=saldoInformado===null ?
+        Math.max(0,Number(servidor.restantesEstimadas || 0)-1) : saldoInformado;
+    servidor.requisicoesSistema=Math.max(0,Number(servidor.requisicoesSistema || 0))+1;
+    servidor.ultimaOperacao=`${operacao} · ${new Date().toISOString()}`;
+    servidor.atualizadoEm=new Date().toISOString();
+    if(saldoInformado!==null){
+        servidor.origemContagem="cabecalho-api";
+        servidor.confirmadoEm=servidor.atualizadoEm;
+    }
+    salvarServidoresJSONBin();
+    atualizarIndicadoresQuota();
+}
+
+async function executarFetchJSONBin(conexao,url,opcoes,operacao){
+    const resposta=await fetch(url,opcoes);
+    registrarConsumoJSONBin(conexao,resposta,operacao);
+    return resposta;
+}
+
+salvarServidoresJSONBin();
 function ultimaGravacaoDesteBin(){
     try{
         const salvo=JSON.parse(localStorage.getItem("loc_ultimo_put") || "null");
@@ -2225,6 +2459,97 @@ function tempoDeRespostaAgora(){
 
 function horarioBanco(data){
     return new Date(data).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+}
+
+function saldoServidorAtivo(){
+    return Math.max(0,Math.floor(Number(conexaoJSONBin?.restantesEstimadas) || 0));
+}
+
+function modoSomenteLeituraAtivo(){
+    return Boolean(redirecionamentoServidor) || saldoServidorAtivo()<=LIMITE_BLOQUEIO_SERVIDOR;
+}
+
+function classeSaldoServidor(restantes){
+    return restantes<=LIMITE_BLOQUEIO_SERVIDOR ? "critico" :
+        restantes<=LIMITE_AVISO_SERVIDOR ? "atencao" : "";
+}
+
+function atualizarIndicadoresQuota(){
+    const restantes=saldoServidorAtivo();
+    const classe=classeSaldoServidor(restantes);
+    const classeVisual=redirecionamentoServidor ? "critico" : classe;
+    const numero=restantes.toLocaleString("pt-BR");
+    const quotaTopo=document.getElementById("quotaTopo");
+    if(quotaTopo){
+        quotaTopo.className=`quota-topo ${classeVisual}`.trim();
+        quotaTopo.textContent=`☁ ${numero} solicitações`;
+        quotaTopo.title="Estimativa baseada no último valor confirmado e nas requisições feitas por este sistema.";
+    }
+    const menu=document.getElementById("menuQuotaRestante");
+    if(menu) menu.textContent=numero;
+    const servidor=document.getElementById("bancoServidorAtivo");
+    if(servidor) servidor.textContent=conexaoJSONBin?.nome || "Servidor atual";
+    const quota=document.getElementById("bancoQuotaRestante");
+    if(quota){
+        quota.textContent=`${numero} estimadas`;
+        quota.style.color=classe==="critico" ? "#b91c1c" : classe==="atencao" ? "#c2410c" : "#166534";
+    }
+    const alerta=document.getElementById("alertaLimiteGlobal");
+    if(alerta){
+        const mostrar=Boolean(redirecionamentoServidor) || restantes<=LIMITE_AVISO_SERVIDOR;
+        const critico=Boolean(redirecionamentoServidor) || classe==="critico";
+        alerta.className=`alerta-limite-global${mostrar ? " visivel" : ""}${critico ? " critico" : ""}`;
+        const titulo=document.getElementById("alertaLimiteTitulo");
+        const texto=document.getElementById("alertaLimiteTexto");
+        if(titulo) titulo.textContent=redirecionamentoServidor ?
+            "⇄ Este servidor foi migrado em outro dispositivo" : classe==="critico" ?
+            `🔒 Somente leitura — restam ${numero} solicitações` :
+            `⚠️ Limite próximo — restam ${numero} solicitações`;
+        if(texto) texto.textContent=redirecionamentoServidor ?
+            `Conecte este aparelho ao ${redirecionamentoServidor.nome || "novo servidor"}. Alterações estão bloqueadas para evitar dados separados.` : classe==="critico" ?
+            "Cadastros e alterações foram bloqueados. Adicione e migre para um novo servidor; consultas e relatórios continuam disponíveis." :
+            "Prepare um novo servidor JSONBin. O sistema bloqueará alterações quando chegar a 2.000 solicitações.";
+    }
+    document.body.classList.toggle("modo-somente-leitura",modoSomenteLeituraAtivo());
+    if(typeof renderServidoresJSONBin==="function") renderServidoresJSONBin();
+    if(acessoLiberado && modoSomenteLeituraAtivo() && !migracaoEmAndamento){
+        const chaveAviso=redirecionamentoServidor ?
+            `loc_aviso_migracao_${redirecionamentoServidor.binId}` :
+            `loc_aviso_limite_${conexaoJSONBin?.id || conexaoJSONBin?.binId}_${LIMITE_BLOQUEIO_SERVIDOR}`;
+        if(localStorage.getItem(chaveAviso)!=="1"){
+            localStorage.setItem(chaveAviso,"1");
+            setTimeout(()=>abrirModal(redirecionamentoServidor ? "Servidor migrado em outro aparelho" : "Servidor na reserva de segurança",`
+                <div style="text-align:center;padding:10px 4px;">
+                    <div style="font-size:58px;margin-bottom:10px;">${redirecionamentoServidor ? "⇄" : "🔒"}</div>
+                    <h2 style="color:#b91c1c;margin-bottom:10px;">${redirecionamentoServidor ? "Conecte este aparelho ao novo servidor" : "Alterações temporariamente bloqueadas"}</h2>
+                    <p style="color:#4b5563;line-height:1.55;">${redirecionamentoServidor ?
+                        `A migração para <strong>${escapeHtml(redirecionamentoServidor.nome || "o novo servidor")}</strong> foi detectada. Informe a chave da nova conta em Conexões; os cadastros ficam bloqueados até a troca para evitar divergências.` :
+                        `Restam aproximadamente <strong>${numero} solicitações</strong>. Você pode consultar tudo normalmente, baixar relatórios e imprimir contratos. Para voltar a cadastrar e editar, migre para um novo servidor.`}</p>
+                    <div class="form-actions" style="justify-content:center;margin-top:18px;">
+                        <button class="btn btn-secondary" type="button" onclick="fecharModal()">Continuar consultando</button>
+                        <button class="btn btn-primary" type="button" onclick="fecharModal();abrirPainelConexoes()">Adicionar servidor</button>
+                    </div>
+                </div>
+            `),250);
+        }
+    }
+}
+
+function restaurarDadosLocaisAposBloqueio(){
+    try{
+        clientes=JSON.parse(localStorage.getItem("loc_clientes") || "[]");
+        ferramentas=JSON.parse(localStorage.getItem("loc_ferramentas") || "[]");
+        locacoes=JSON.parse(localStorage.getItem("loc_locacoes") || "[]");
+        contratos=JSON.parse(localStorage.getItem("loc_contratos") || "[]");
+        config=JSON.parse(localStorage.getItem("loc_config") || "{}");
+        atualizarTudo();
+    }catch(erro){console.error("Não foi possível restaurar os dados locais após o bloqueio.",erro);}
+}
+
+function permitirAlteracaoPorLimite(mostrarMensagem=true){
+    if(!modoSomenteLeituraAtivo()) return true;
+    if(mostrarMensagem) mostrarToast("Modo somente leitura: migre para um novo servidor para fazer alterações.");
+    return false;
 }
 
 function atualizarIndicadorBanco(){
@@ -2258,6 +2583,7 @@ function atualizarIndicadorBanco(){
         "Há alterações para enviar" : "Nenhuma pendente";
     const mensagem=document.getElementById("bancoMensagem");
     if(mensagem) mensagem.textContent=bancoEstado.mensagem;
+    atualizarIndicadoresQuota();
 }
 
 function registrarLeituraConfirmada(latencia){
@@ -2386,17 +2712,35 @@ async function erroHttp(resposta,operacao,conexao=conexaoJSONBin){
     return erro;
 }
 
-async function lerBancoDaNuvem(conexao=conexaoJSONBin){
+async function lerRegistroJSONBinBruto(conexao=conexaoJSONBin){
     ultimoAcessoNuvem=Date.now();
-    const inicio=tempoDeRespostaAgora();
-    const resposta=await fetch(enderecoJSONBin(conexao)+"/latest",{
+    const resposta=await executarFetchJSONBin(conexao,enderecoJSONBin(conexao)+"/latest",{
         method:"GET",
         headers:cabecalhoJSONBin(conexao),
         cache:"no-store"
-    });
+    },"GET");
     if(!resposta.ok) throw await erroHttp(resposta,"GET",conexao);
     const conteudo=await resposta.json();
-    const banco=validarBanco(conteudo?.record ?? conteudo);
+    return conteudo?.record ?? conteudo;
+}
+
+async function lerBancoDaNuvem(conexao=conexaoJSONBin){
+    const inicio=tempoDeRespostaAgora();
+    const banco=validarBanco(await lerRegistroJSONBinBruto(conexao));
+    if(conexao===conexaoJSONBin){
+        const migracao=banco?._locacaoPro?.migradoPara;
+        if(migracao?.binId && migracao.binId!==conexao.binId){
+            redirecionamentoServidor={
+                binId:String(migracao.binId),
+                nome:String(migracao.nome || "Novo servidor"),
+                migradoEm:migracao.migradoEm || null
+            };
+            try{localStorage.setItem("loc_jsonbin_redirecionamento",JSON.stringify(redirecionamentoServidor));}catch(_erro){}
+        }else{
+            redirecionamentoServidor=null;
+            localStorage.removeItem("loc_jsonbin_redirecionamento");
+        }
+    }
     if(conexao===conexaoJSONBin) registrarLeituraConfirmada(tempoDeRespostaAgora()-inicio);
     return banco;
 }
@@ -2610,16 +2954,21 @@ function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
             const versao=versaoLocal;
             const remoto=remotoJaLido || await lerBancoDaNuvem();
             remotoJaLido=null;
+            if(redirecionamentoServidor){
+                const erro=new Error(`Este servidor foi migrado para ${redirecionamentoServidor.nome || "outro servidor"}. Conecte o novo servidor antes de enviar alterações.`);
+                erro.migracaoRemota=true;
+                throw erro;
+            }
             const proximo=mesclarBanco(baseSincronizada(),local,remoto,priorizarLocal);
             renovarLocacoesVencidas(proximo.locacoes);
             priorizarLocal=false;
             if(!iguaisBanco(proximo,remoto)){
                 // Versionamento é opcional no JSONBin; usar os cabeçalhos mínimos permite o plano gratuito.
-                const resposta=await fetch(enderecoJSONBin(),{
+                const resposta=await executarFetchJSONBin(conexaoJSONBin,enderecoJSONBin(),{
                     method:"PUT",
                     headers:{"Content-Type":"application/json",...cabecalhoJSONBin()},
                     body:JSON.stringify(proximo)
-                });
+                },"PUT");
                 if(!resposta.ok) throw await erroHttp(resposta,"PUT");
                 registrarGravacaoConfirmada();
             }
@@ -2645,13 +2994,17 @@ function sincronizarPendencias(priorizarLocal=false,remotoJaLido=null){
         if(conflitoPendente) localStorage.setItem("loc_sync_conflict","1");
         estadoSincronizacao(mensagem,true,conflitoPendente ? "conflito" : "erro");
         mostrarToast(mensagem);
-        if(!conflitoPendente && ![400,401,402,403,404,413,422].includes(erro.status)) agendarNovaTentativa();
+        if(!conflitoPendente && !erro.migracaoRemota && ![400,401,402,403,404,413,422].includes(erro.status)) agendarNovaTentativa();
         return false;
     }).finally(()=>{filaSalvamento=null;});
     return filaSalvamento;
 }
 
 function salvarDados(){
+    if(!permitirAlteracaoPorLimite()){
+        restaurarDadosLocaisAposBloqueio();
+        return Promise.resolve(false);
+    }
     gravarDadosLocais(dadosAtuais());
     localStorage.setItem("loc_sync_pending","1");
     versaoLocal++;
@@ -2659,10 +3012,423 @@ function salvarDados(){
     return sincronizarPendencias();
 }
 
-function abrirConfigurarConexao(){
-    abrirModal("Conexão com o JSONBin",`
-        <p class="info-box">Use o ID do bin que contém os seus clientes e uma chave da mesma conta. A Access Key precisa de permissões de leitura e atualização. A chave ficará salva somente neste navegador.</p>
+function abrirPainelConexoes(){
+    const botao=[...document.querySelectorAll(".menu button")].find(item=>
+        (item.getAttribute("onclick") || "").includes("'conexoes'"));
+    mostrarSecao("conexoes",botao || null);
+    renderServidoresJSONBin();
+}
+
+function formatarDataHoraCurta(valor){
+    if(!valor || isNaN(Date.parse(valor))) return "Ainda não informado";
+    return new Date(valor).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+}
+
+function renderServidoresJSONBin(){
+    const area=document.getElementById("listaServidores");
+    if(!area) return;
+    if(!servidoresJSONBin.length){
+        area.innerHTML='<div class="card empty">Nenhum servidor cadastrado.</div>';
+        return;
+    }
+    area.innerHTML=servidoresJSONBin.map((servidor,indice)=>{
+        const restantes=Math.max(0,Number(servidor.restantesEstimadas) || 0);
+        const limite=Math.max(1,Number(servidor.limiteInicial) || SOLICITACOES_CONTA_NOVA);
+        const percentual=Math.max(0,Math.min(100,restantes/limite*100));
+        const classe=classeSaldoServidor(restantes);
+        const ativo=servidor===conexaoJSONBin || servidor.ativo;
+        const finalBin=servidor.binId ? servidor.binId.slice(-7) : "—";
+        return `
+            <article class="servidor-card ${ativo ? "ativo" : ""} ${classe==="critico" ? "critico" : ""}">
+                <div class="servidor-card-cabecalho">
+                    <div>
+                        <h3>${escapeHtml(servidor.nome || `Servidor ${indice+1}`)}</h3>
+                        <small>Bin •••••${escapeHtml(finalBin)}</small>
+                    </div>
+                    <span class="servidor-selo ${ativo ? "ativo" : "reserva"}">${ativo ? "ATIVO" : "RESERVA"}</span>
+                </div>
+                <small>Solicitações restantes estimadas</small>
+                <div class="servidor-saldo ${classe}">${restantes.toLocaleString("pt-BR")}</div>
+                <div class="servidor-barra"><span class="${classe}" style="width:${percentual.toFixed(2)}%"></span></div>
+                <small>${percentual.toFixed(1).replace(".",",")}% de ${limite.toLocaleString("pt-BR")}</small>
+                <div class="servidor-detalhes">
+                    <div>Tipo de chave<strong>${servidor.tipoChave==="master" ? "Master Key" : "Access Key"}</strong></div>
+                    <div>Consumidas pelo sistema<strong>${Number(servidor.requisicoesSistema || 0).toLocaleString("pt-BR")}</strong></div>
+                    <div>Saldo confirmado em<strong>${formatarDataHoraCurta(servidor.confirmadoEm)}</strong></div>
+                    <div>Última operação<strong>${servidor.ultimaOperacao ? escapeHtml(servidor.ultimaOperacao.split(" · ")[0]) + " · " + formatarDataHoraCurta(servidor.ultimaOperacao.split(" · ")[1]) : "Nenhuma"}</strong></div>
+                </div>
+                <div class="servidor-acoes">
+                    <button class="btn btn-secondary" type="button" onclick="abrirCalibrarQuota('${servidor.id}')">🔢 Atualizar saldo</button>
+                    <button class="btn btn-secondary" type="button" onclick="testarServidorJSONBin('${servidor.id}',true)">⟳ Testar</button>
+                    ${ativo ? `<button class="btn btn-secondary" type="button" onclick="abrirConfigurarConexao()">⚙ Configurar</button>` :
+                        `${redirecionamentoServidor?.binId===servidor.binId ?
+                            `<button class="btn btn-primary" type="button" onclick="ativarServidorMigrado('${servidor.id}')">✓ Conectar servidor migrado</button>` :
+                            `<button class="btn btn-primary" type="button" onclick="confirmarMigracaoServidor('${servidor.id}')">⇄ Migrar e ativar</button>`}
+                         <button class="btn btn-danger" type="button" onclick="removerServidorJSONBin('${servidor.id}')">Remover</button>`}
+                </div>
+            </article>
+        `;
+    }).join("");
+}
+
+function abrirAdicionarServidor(){
+    const numero=servidoresJSONBin.length+1;
+    const sugestaoNome=redirecionamentoServidor?.nome || `Servidor ${numero}`;
+    const sugestaoBin=redirecionamentoServidor?.binId || "";
+    abrirModal("Adicionar novo servidor JSONBin",`
+        <p class="info-box">Crie o Bin em uma <strong>nova conta JSONBin</strong>, mantenha-o privado e informe os dados abaixo. Confira o número de Pending Requests depois de salvar o Bin. A chave fica somente neste navegador e não será enviada para o banco de dados.</p>
         <div class="form-grid">
+            <div class="form-group full">
+                <label for="novoServidorNome">Nome do servidor *</label>
+                <input id="novoServidorNome" value="${escapeHtml(sugestaoNome)}" maxlength="60" placeholder="Ex.: Servidor 2">
+            </div>
+            <div class="form-group full">
+                <label for="novoServidorBinId">Novo Bin ID *</label>
+                <input id="novoServidorBinId" value="${escapeHtml(sugestaoBin)}" autocomplete="off" spellcheck="false" maxlength="24" placeholder="24 caracteres">
+            </div>
+            <div class="form-group">
+                <label for="novoServidorTipo">Tipo de chave *</label>
+                <select id="novoServidorTipo">
+                    <option value="access">Access Key (recomendada)</option>
+                    <option value="master">Master Key</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="novoServidorSaldo">Solicitações disponíveis *</label>
+                <input id="novoServidorSaldo" type="number" min="1" max="1000000" value="${SOLICITACOES_CONTA_NOVA}">
+            </div>
+            <div class="form-group full">
+                <label for="novoServidorChave">Chave da API *</label>
+                <input id="novoServidorChave" type="password" autocomplete="new-password" placeholder="Cole a chave da conta nova">
+            </div>
+        </div>
+        <p id="novoServidorMensagem" role="alert" style="color:#b91c1c;margin:12px 0;"></p>
+        <div class="form-actions">
+            <button class="btn btn-secondary" type="button" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" type="button" id="novoServidorSalvar" onclick="salvarNovoServidorJSONBin()">Testar e adicionar</button>
+        </div>
+    `);
+}
+
+async function salvarNovoServidorJSONBin(){
+    const nome=document.getElementById("novoServidorNome")?.value.trim();
+    const binId=document.getElementById("novoServidorBinId")?.value.trim();
+    const tipoChave=document.getElementById("novoServidorTipo")?.value;
+    const chave=document.getElementById("novoServidorChave")?.value.trim();
+    const saldo=Math.floor(Number(document.getElementById("novoServidorSaldo")?.value));
+    const mensagem=document.getElementById("novoServidorMensagem");
+    const botao=document.getElementById("novoServidorSalvar");
+    if(!nome || !/^[a-f0-9]{24}$/i.test(binId || "") || !["access","master"].includes(tipoChave) || !chave || !Number.isInteger(saldo) || saldo<1){
+        mensagem.textContent="Preencha nome, Bin ID de 24 caracteres, tipo de chave, chave da API e quantidade disponível.";
+        return false;
+    }
+    if(servidoresJSONBin.some(item=>item.binId.toLowerCase()===binId.toLowerCase())){
+        mensagem.textContent="Este Bin ID já está cadastrado nas Conexões.";
+        return false;
+    }
+    const servidor=normalizarServidorJSONBin({
+        id:`servidor-${binId}-${Date.now()}`,nome,binId,tipoChave,chave,
+        limiteInicial:Math.max(SOLICITACOES_CONTA_NOVA,saldo),restantesEstimadas:saldo,
+        confirmadoEm:new Date().toISOString(),origemContagem:"confirmacao-manual",ativo:false
+    },servidoresJSONBin.length);
+    servidoresJSONBin.push(servidor);
+    salvarServidoresJSONBin();
+    botao.disabled=true;
+    mensagem.style.color="#1d4ed8";
+    mensagem.textContent="Testando acesso ao novo Bin...";
+    try{
+        await lerRegistroJSONBinBruto(servidor);
+        fecharModal();
+        renderServidoresJSONBin();
+        mostrarToast("Novo servidor testado e adicionado. Agora você pode migrar e ativar.");
+        return true;
+    }catch(erro){
+        servidoresJSONBin=servidoresJSONBin.filter(item=>item!==servidor);
+        salvarServidoresJSONBin();
+        mensagem.style.color="#b91c1c";
+        mensagem.textContent=descreverErro(erro);
+        return false;
+    }finally{
+        if(document.getElementById("novoServidorSalvar")) botao.disabled=false;
+    }
+}
+
+function abrirCalibrarQuota(id){
+    const servidor=servidoresJSONBin.find(item=>item.id===id);
+    if(!servidor) return;
+    abrirModal("Atualizar saldo de solicitações",`
+        <p class="info-box">Abra o Dashboard da conta correspondente e copie o número exibido em <strong>Pending Requests</strong>. Esse valor passa a ser a nova referência do contador.</p>
+        <div class="form-group">
+            <label for="quotaConfirmada">Solicitações restantes no Dashboard *</label>
+            <input id="quotaConfirmada" type="number" min="0" max="1000000" value="${Math.max(0,Number(servidor.restantesEstimadas) || 0)}">
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-secondary" type="button" onclick="window.open('https://jsonbin.io/app/dashboard','_blank','noopener')">↗ Abrir Dashboard</button>
+            <button class="btn btn-secondary" type="button" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-primary" type="button" onclick="salvarCalibracaoQuota('${servidor.id}')">Confirmar saldo</button>
+        </div>
+    `);
+}
+
+function salvarCalibracaoQuota(id){
+    const servidor=servidoresJSONBin.find(item=>item.id===id);
+    const saldo=Math.floor(Number(document.getElementById("quotaConfirmada")?.value));
+    if(!servidor || !Number.isInteger(saldo) || saldo<0){
+        mostrarToast("Informe uma quantidade válida.");
+        return;
+    }
+    servidor.restantesEstimadas=saldo;
+    servidor.limiteInicial=Math.max(Number(servidor.limiteInicial) || SOLICITACOES_CONTA_NOVA,saldo);
+    servidor.confirmadoEm=new Date().toISOString();
+    servidor.atualizadoEm=servidor.confirmadoEm;
+    servidor.origemContagem="confirmacao-manual";
+    salvarServidoresJSONBin();
+    fecharModal();
+    atualizarIndicadoresQuota();
+    mostrarToast("Saldo atualizado conforme o Dashboard do JSONBin.");
+}
+
+async function testarServidorJSONBin(id,avisar=false){
+    const servidor=servidoresJSONBin.find(item=>item.id===id);
+    if(!servidor) return false;
+    estadoSincronizacao(`Testando ${servidor.nome}...`,false,"verificando");
+    try{
+        const bruto=await lerRegistroJSONBinBruto(servidor);
+        let estrutura="conteúdo pronto para migração";
+        try{validarBanco(bruto);}catch(_erro){estrutura="conexão válida; o conteúdo será substituído na migração";}
+        estadoSincronizacao(`${servidor.nome}: conexão confirmada.`,false,"online");
+        if(avisar) mostrarToast(`${servidor.nome}: ${estrutura}.`);
+        return true;
+    }catch(erro){
+        const mensagem=descreverErro(erro);
+        estadoSincronizacao(mensagem,true);
+        if(avisar) mostrarToast(mensagem);
+        return false;
+    }
+}
+
+function removerServidorJSONBin(id){
+    const servidor=servidoresJSONBin.find(item=>item.id===id);
+    if(!servidor || servidor===conexaoJSONBin || servidor.ativo){
+        mostrarToast("O servidor ativo não pode ser removido.");
+        return;
+    }
+    if(!confirm(`Remover ${servidor.nome} somente da lista deste navegador? O Bin da conta JSONBin não será apagado.`)) return;
+    servidoresJSONBin=servidoresJSONBin.filter(item=>item!==servidor);
+    salvarServidoresJSONBin();
+    renderServidoresJSONBin();
+    mostrarToast("Servidor removido da lista local.");
+}
+
+async function ativarServidorMigrado(id){
+    if(migracaoEmAndamento) return;
+    const destino=servidoresJSONBin.find(item=>item.id===id);
+    const origem=conexaoJSONBin;
+    if(!destino || destino===origem) return;
+    migracaoEmAndamento=true;
+    prepararTelaMigracao(`Conectando a ${destino.nome}`);
+    try{
+        atualizarEtapaMigracao("Testando a chave da nova conta",25,false);
+        let banco=await lerBancoDaNuvem(destino);
+        atualizarEtapaMigracao("Banco do novo servidor carregado",60);
+        validarBanco(banco);
+        if(localStorage.getItem("loc_sync_pending")==="1"){
+            localStorage.setItem("loc_ultimo_backup_migracao",JSON.stringify({
+                criadoEm:new Date().toISOString(),
+                aviso:"Alterações locais encontradas ao conectar este aparelho ao servidor migrado.",
+                dadosLocais:dadosAtuais(),dadosDoNovoServidor:banco,baseAnterior:baseSincronizada()
+            }));
+            atualizarEtapaMigracao("Combinando alterações pendentes deste aparelho",70,false);
+            const combinado=mesclarBanco(baseSincronizada(),dadosAtuais(),banco);
+            if(!iguaisBanco(combinado,banco)){
+                await gravarBancoNoServidor(destino,combinado);
+                banco=await lerBancoDaNuvem(destino);
+                if(!iguaisBanco(validarBanco(combinado),validarBanco(banco))){
+                    throw new Error("As alterações locais foram enviadas, mas a conferência do novo servidor não coincidiu.");
+                }
+            }
+            atualizarEtapaMigracao("Alterações pendentes preservadas e conferidas",82);
+        }
+        atualizarEtapaMigracao("Estrutura e registros conferidos",85);
+        origem.ativo=false;
+        destino.ativo=true;
+        conexaoJSONBin=destino;
+        servidoresJSONBin.forEach(item=>item.ativo=item===destino);
+        redirecionamentoServidor=null;
+        localStorage.removeItem("loc_jsonbin_redirecionamento");
+        salvarServidoresJSONBin();
+        localStorage.setItem("loc_cloud_base",JSON.stringify(banco));
+        localStorage.removeItem("loc_sync_pending");
+        localStorage.removeItem("loc_sync_conflict");
+        conflitoPendente=false;
+        aplicarBanco(banco);
+        bancoEstado.ultimaLeitura=new Date().toISOString();
+        bancoEstado.qualidade="boa";
+        bancoEstado.fase="online";
+        bancoEstado.mensagem=`${destino.nome} conectado neste aparelho.`;
+        atualizarEtapaMigracao("Este aparelho já usa o novo servidor",100);
+        atualizarIndicadoresQuota();
+        estadoSincronizacao(`${destino.nome} conectado com sucesso.`,false,"online");
+        concluirTelaMigracao(true,"O novo servidor foi conectado sem reenviar dados antigos. Este aparelho voltou a permitir alterações.");
+    }catch(erro){
+        const mensagem=descreverErro(erro);
+        concluirTelaMigracao(false,`${mensagem} O servidor anterior continua configurado neste aparelho.`);
+        estadoSincronizacao(mensagem,true);
+    }finally{
+        migracaoEmAndamento=false;
+        renderServidoresJSONBin();
+    }
+}
+
+let migracaoEmAndamento=false;
+
+function prepararTelaMigracao(titulo="Preparando migração"){
+    const overlay=document.getElementById("migracaoOverlay");
+    document.getElementById("migracaoTitulo").textContent=titulo;
+    document.getElementById("migracaoMensagem").textContent="Aguarde. Não feche esta página.";
+    document.getElementById("migracaoIcone").className="migracao-icone carregando";
+    document.getElementById("migracaoIcone").textContent="↻";
+    document.getElementById("migracaoBarra").style.width="4%";
+    document.getElementById("migracaoEtapas").innerHTML="";
+    document.getElementById("migracaoAcoes").style.display="none";
+    overlay.classList.add("aberta");
+}
+
+function atualizarEtapaMigracao(texto,percentual,concluida=true){
+    const etapas=document.getElementById("migracaoEtapas");
+    const linha=document.createElement("div");
+    linha.className=concluida ? "ok" : "";
+    linha.textContent=`${concluida ? "✓" : "•"} ${texto}`;
+    etapas.appendChild(linha);
+    document.getElementById("migracaoMensagem").textContent=texto;
+    document.getElementById("migracaoBarra").style.width=`${Math.max(4,Math.min(100,percentual))}%`;
+}
+
+function concluirTelaMigracao(sucesso,mensagem){
+    const icone=document.getElementById("migracaoIcone");
+    icone.className=`migracao-icone ${sucesso ? "sucesso" : "erro"}`;
+    icone.textContent=sucesso ? "✓" : "!";
+    document.getElementById("migracaoTitulo").textContent=sucesso ? "Novo servidor ativado!" : "Migração não concluída";
+    document.getElementById("migracaoMensagem").textContent=mensagem;
+    document.getElementById("migracaoBarra").style.width=sucesso ? "100%" : "0%";
+    document.getElementById("migracaoAcoes").style.display="flex";
+}
+
+function fecharTelaMigracao(){
+    if(migracaoEmAndamento) return;
+    document.getElementById("migracaoOverlay").classList.remove("aberta");
+}
+
+function confirmarMigracaoServidor(id){
+    const destino=servidoresJSONBin.find(item=>item.id===id);
+    if(!destino || destino===conexaoJSONBin) return;
+    abrirModal("Confirmar migração do banco",`
+        <div style="text-align:center;padding:8px 2px;">
+            <div style="font-size:52px;margin-bottom:10px;">⇄</div>
+            <h2 style="margin-bottom:10px;">${escapeHtml(conexaoJSONBin.nome)} → ${escapeHtml(destino.nome)}</h2>
+            <p style="color:#4b5563;line-height:1.55;">O sistema enviará a cópia mais recente de clientes, ferramentas, locações, contratos, pagamentos e configurações. Depois fará uma leitura de conferência antes de ativar o destino.</p>
+            <p style="margin-top:12px;color:#b45309;font-weight:700;">O servidor atual não será apagado.</p>
+            <div class="form-actions" style="justify-content:center;margin-top:18px;">
+                <button class="btn btn-secondary" type="button" onclick="fecharModal()">Cancelar</button>
+                <button class="btn btn-primary" type="button" onclick="fecharModal();migrarParaServidor('${destino.id}')">Iniciar migração</button>
+            </div>
+        </div>
+    `);
+}
+
+async function gravarBancoNoServidor(servidor,banco){
+    const resposta=await executarFetchJSONBin(servidor,enderecoJSONBin(servidor),{
+        method:"PUT",
+        headers:{"Content-Type":"application/json",...cabecalhoJSONBin(servidor)},
+        body:JSON.stringify(banco)
+    },"PUT");
+    if(!resposta.ok) throw await erroHttp(resposta,"PUT",servidor);
+    return resposta;
+}
+
+async function migrarParaServidor(id){
+    if(migracaoEmAndamento) return;
+    const destino=servidoresJSONBin.find(item=>item.id===id);
+    const origem=conexaoJSONBin;
+    if(!destino || destino===origem) return;
+    migracaoEmAndamento=true;
+    prepararTelaMigracao(`Migrando para ${destino.nome}`);
+    try{
+        if(filaSalvamento){
+            atualizarEtapaMigracao("Finalizando alterações pendentes no servidor atual",10,false);
+            await filaSalvamento;
+        }
+        if(localStorage.getItem("loc_sync_pending")==="1"){
+            atualizarEtapaMigracao("Sincronizando alterações pendentes",15,false);
+            const sincronizou=await sincronizarPendencias();
+            if(!sincronizou || localStorage.getItem("loc_sync_pending")==="1") throw new Error("Não foi possível sincronizar as alterações pendentes antes da migração.");
+        }
+        atualizarEtapaMigracao("Conexão com o servidor atual confirmada",20);
+        const bancoOrigem=await lerBancoDaNuvem(origem);
+        atualizarEtapaMigracao("Banco mais recente carregado",38);
+        localStorage.setItem("loc_ultimo_backup_migracao",JSON.stringify({
+            criadoEm:new Date().toISOString(),servidor:origem.nome,binId:origem.binId,dados:bancoOrigem
+        }));
+        atualizarEtapaMigracao("Cópia de segurança local criada",50);
+        if(new Blob([JSON.stringify(bancoOrigem)]).size>100000){
+            throw new Error("O banco ultrapassou aproximadamente 100 KB e pode exceder o limite do plano gratuito do JSONBin.");
+        }
+        await gravarBancoNoServidor(destino,bancoOrigem);
+        atualizarEtapaMigracao("Todos os dados enviados ao novo servidor",72);
+        const bancoConferido=await lerBancoDaNuvem(destino);
+        atualizarEtapaMigracao("Cópia do destino baixada para conferência",86);
+        if(!iguaisBanco(validarBanco(bancoOrigem),validarBanco(bancoConferido))){
+            throw new Error("A conferência encontrou diferença entre a origem e o destino. O servidor antigo continua ativo.");
+        }
+        atualizarEtapaMigracao("Clientes, ferramentas, locações e pagamentos conferidos",94);
+        const origemComAviso=JSON.parse(JSON.stringify(bancoOrigem));
+        origemComAviso._locacaoPro={
+            ...(origemComAviso._locacaoPro || {}),
+            migradoPara:{binId:destino.binId,nome:destino.nome,migradoEm:new Date().toISOString()}
+        };
+        await gravarBancoNoServidor(origem,origemComAviso);
+        atualizarEtapaMigracao("Outros aparelhos serão avisados sobre a troca",97);
+        origem.ativo=false;
+        destino.ativo=true;
+        destino.confirmadoEm=new Date().toISOString();
+        destino.atualizadoEm=destino.confirmadoEm;
+        conexaoJSONBin=destino;
+        servidoresJSONBin.forEach(item=>item.ativo=item===destino);
+        salvarServidoresJSONBin();
+        localStorage.setItem("loc_cloud_base",JSON.stringify(bancoConferido));
+        localStorage.removeItem("loc_sync_pending");
+        localStorage.removeItem("loc_sync_conflict");
+        conflitoPendente=false;
+        bancoEstado.ultimaLeitura=new Date().toISOString();
+        bancoEstado.ultimaGravacao=new Date().toISOString();
+        bancoEstado.qualidade="boa";
+        bancoEstado.fase="online";
+        bancoEstado.mensagem=`${destino.nome} ativado e conferido.`;
+        aplicarBanco(bancoConferido);
+        atualizarEtapaMigracao("Novo servidor definido como ativo",100);
+        atualizarIndicadoresQuota();
+        estadoSincronizacao(`${destino.nome} ativado com sucesso.`,false,"online");
+        concluirTelaMigracao(true,"Migração conferida. O sistema já está usando o novo servidor e o anterior foi mantido como backup.");
+    }catch(erro){
+        console.error("Falha na migração do servidor.",erro);
+        const mensagem=descreverErro(erro);
+        atualizarEtapaMigracao("Migração interrompida com segurança",100,false);
+        concluirTelaMigracao(false,`${mensagem} O servidor anterior permanece ativo.`);
+        estadoSincronizacao(mensagem,true);
+    }finally{
+        migracaoEmAndamento=false;
+        renderServidoresJSONBin();
+    }
+}
+
+function abrirConfigurarConexao(){
+    abrirModal("Configurar servidor ativo",`
+        <p class="info-box">A Access Key precisa de permissões de leitura e atualização. A chave fica somente neste navegador. Para trocar de conta com conferência dos dados, use <strong>Adicionar novo servidor</strong> e depois <strong>Migrar e ativar</strong>.</p>
+        <div class="form-grid">
+            <div class="form-group full">
+                <label for="conexaoNome">Nome do servidor *</label>
+                <input id="conexaoNome" value="${escapeHtml(conexaoJSONBin.nome || "Servidor atual")}" maxlength="60">
+            </div>
             <div class="form-group full">
                 <label for="conexaoBinId">ID do bin *</label>
                 <input id="conexaoBinId" value="${escapeHtml(conexaoJSONBin.binId)}" autocomplete="off" spellcheck="false">
@@ -2678,6 +3444,10 @@ function abrirConfigurarConexao(){
                 <label for="conexaoChave">Chave da API ${conexaoJSONBin.chave ? "(deixe vazio para manter a atual)" : "*"}</label>
                 <input id="conexaoChave" type="password" autocomplete="new-password" placeholder="Cole aqui; não envie esta chave pelo chat">
             </div>
+            <div class="form-group full">
+                <label for="conexaoSaldo">Solicitações restantes mostradas no Dashboard *</label>
+                <input id="conexaoSaldo" type="number" min="0" max="1000000" value="${saldoServidorAtivo()}">
+            </div>
         </div>
         <p id="conexaoMensagem" role="alert" style="color:#b91c1c;margin:12px 0;"></p>
         <div class="form-actions">
@@ -2689,26 +3459,42 @@ function abrirConfigurarConexao(){
 }
 
 async function salvarConexaoJSONBin(){
+    const nome=document.getElementById("conexaoNome")?.value.trim();
     const binId=document.getElementById("conexaoBinId")?.value.trim();
     const tipoChave=document.getElementById("conexaoTipo")?.value;
     const chave=document.getElementById("conexaoChave")?.value.trim() || conexaoJSONBin.chave;
+    const saldo=Math.floor(Number(document.getElementById("conexaoSaldo")?.value));
     const mensagem=document.getElementById("conexaoMensagem");
     const botao=document.getElementById("conexaoSalvar");
-    if(!/^[a-f0-9]{24}$/i.test(binId || "") || !["access","master"].includes(tipoChave) || !chave){
-        mensagem.textContent="Informe o ID de 24 caracteres, o tipo e a chave do JSONBin.";
+    if(!nome || !/^[a-f0-9]{24}$/i.test(binId || "") || !["access","master"].includes(tipoChave) || !chave || !Number.isInteger(saldo) || saldo<0){
+        mensagem.textContent="Informe nome, ID de 24 caracteres, tipo, chave e saldo de solicitações.";
         return false;
     }
-    const proposta={binId,tipoChave,chave};
+    const mudouBin=conexaoJSONBin.binId!==binId;
+    if(mudouBin && servidoresJSONBin.some(item=>item!==conexaoJSONBin && item.binId.toLowerCase()===binId.toLowerCase())){
+        mensagem.textContent="Este Bin já está cadastrado como outro servidor. Use a opção Migrar e ativar.";
+        return false;
+    }
+    const proposta={id:mudouBin ? `teste-${binId}` : conexaoJSONBin.id,binId,tipoChave,chave};
     botao.disabled=true;
+    mensagem.style.color="#1d4ed8";
     mensagem.textContent="Verificando permissão de leitura...";
     try{
         const inicio=tempoDeRespostaAgora();
         const remoto=await lerBancoDaNuvem(proposta);
         const latencia=tempoDeRespostaAgora()-inicio;
         if(filaSalvamento) await filaSalvamento;
-        const mudouBin=conexaoJSONBin.binId!==binId;
-        conexaoJSONBin=proposta;
-        localStorage.setItem("loc_jsonbin_conexao",JSON.stringify(proposta));
+        Object.assign(conexaoJSONBin,{
+            nome,binId,tipoChave,chave,
+            limiteInicial:Math.max(Number(conexaoJSONBin.limiteInicial) || SOLICITACOES_CONTA_NOVA,saldo),
+            restantesEstimadas:Math.max(0,saldo-1),
+            confirmadoEm:new Date().toISOString(),
+            atualizadoEm:new Date().toISOString(),
+            origemContagem:"confirmacao-manual",
+            ativo:true
+        });
+        servidoresJSONBin.forEach(item=>item.ativo=item===conexaoJSONBin);
+        salvarServidoresJSONBin();
         bancoEstado.ultimaLeitura=null;
         bancoEstado.ultimaGravacao=ultimaGravacaoDesteBin();
         registrarLeituraConfirmada(latencia);
@@ -2736,10 +3522,12 @@ async function salvarConexaoJSONBin(){
                 salvarDados();
             }
         }
+        atualizarIndicadoresQuota();
         mostrarToast("Leitura do JSONBin confirmada. Conexão salva neste navegador.");
         return true;
     }catch(erro){
         const texto=descreverErro(erro);
+        mensagem.style.color="#b91c1c";
         mensagem.textContent=texto;
         estadoSincronizacao(texto,true);
         return false;
@@ -2951,7 +3739,8 @@ const titulos = {
     manutencao:"Manutenção",
     bloqueados:"Bloqueados",
     financeiro:"Financeiro",
-    configuracoes:"Configurações"
+    configuracoes:"Configurações",
+    conexoes:"Conexões e servidores"
 };
 
 
@@ -6002,12 +6791,35 @@ function atualizarTudo(){
     atualizarDashboard();
     atualizarFinanceiro();
     carregarConfiguracoes();
+    atualizarIndicadoresQuota();
 }
 
 
 /* =====================================================
    CLIQUE FORA DA BUSCA
 ===================================================== */
+
+const ACOES_BLOQUEADAS_POR_LIMITE=[
+    "abrirNovoCliente","salvarCliente","editarCliente","excluirCliente",
+    "abrirNovaFerramenta","editarFerramenta","salvarFerramenta","excluirFerramenta",
+    "abrirEnviarManutencao","confirmarEnvioManutencao","abrirLiberarManutencao","confirmarLiberacaoManutencao",
+    "abrirBloquearFerramenta","confirmarBloqueioFerramenta","abrirLiberarBloqueio","confirmarLiberacaoBloqueio",
+    "abrirNovaLocacao","editarLocacao","adicionarItemLocacao","removerItemLocacao","selecionarClienteLocacao",
+    "salvarLocacao","finalizarLocacao","confirmarDevolucaoLocacao","confirmarPagamentoEFinalizar",
+    "abrirRecebimentoParcial","definirValorRecebimento","confirmarRecebimentoParcial","excluirRecebimento",
+    "abrirReativacaoLocacao","confirmarReativacaoLocacao","excluirLocacao","salvarConfiguracoes"
+];
+
+document.addEventListener("click",function(event){
+    if(!modoSomenteLeituraAtivo()) return;
+    const acionador=event.target.closest?.("[onclick]");
+    if(!acionador) return;
+    const codigo=acionador.getAttribute("onclick") || "";
+    if(!ACOES_BLOQUEADAS_POR_LIMITE.some(nome=>codigo.includes(`${nome}(`))) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    permitirAlteracaoPorLimite(true);
+},true);
 
 document.addEventListener("click",function(event){
     const area=document.querySelector(".cliente-search");
